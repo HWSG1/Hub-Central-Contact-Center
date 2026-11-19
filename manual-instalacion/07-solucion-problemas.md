@@ -27,3 +27,6 @@ Este mensaje corresponde a un fallo de conexión con la API o una respuesta de e
 
 ## Tamaño del login
 El login adapta espacios a la altura disponible, conserva campos de 16px y controles de al menos 44px. El botón corporativo no configurado no se muestra. El cambio inicial de contraseña es un segundo paso visual; no altera el requisito de MFA ni la validación de la API. En pantallas excepcionalmente bajas, zoom alto o teclado móvil abierto se permite el desplazamiento imprescindible, para no recortar controles.
+
+## connection.queryRaw is not a function
+Corregido el conflicto entre los controladores mssql: se carga únicamente el seleccionado por SQL_AUTH. Actualizar código, ejecutar npm.cmd run build:api y reiniciar la API; db:check usa directamente el código fuente. No recrear cuentas ni tablas. El archivo .env aparece atenuado en VS Code porque .gitignore lo excluye; start:api y db:check lo cargan con --env-file=.env desde la raíz del proyecto. Las variables ya definidas en la terminal tienen prioridad sobre el archivo. Nunca imprimir el archivo completo para diagnosticar.

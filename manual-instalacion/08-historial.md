@@ -32,3 +32,6 @@ Se agrega admin:remote para generar un SQL privado de identidad con revisión pr
 
 ## 2026-11-19 · Confianza configurable del certificado SQL
 Se incorpora SQL_TRUST_SERVER_CERTIFICATE (false por defecto; true por elección explícita del operador). Mantiene encrypt=true en ambos modos de autenticación. db:check distingue conexión cifrada de validación de certificado. No modifica .env ni SQL; ver configuración y limitación de identidad en el capítulo 03.
+
+## 2026-11-19 · Selección exclusiva del controlador SQL
+Se elimina la importación simultánea de Tedious y msnodesqlv8, que sobrescribía el registro global de mssql y provocaba connection.queryRaw is not a function con SQL_AUTH=sql. Pruebas de regresión para ambos controladores sin conexión a SQL.
