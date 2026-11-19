@@ -15,6 +15,7 @@
     "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
     "admin:provision": "tsx --env-file=.env scripts/provision.ts",
     "admin:local": "tsx --env-file=.env scripts/admin-local.ts",
+    "admin:remote": "tsx scripts/admin-remote.ts",
     "db:check": "tsx --env-file=.env scripts/check-connection.ts",
     "docs:build": "node scripts/build-install-sql.cjs",
     "docs:check": "node scripts/build-install-sql.cjs --check"

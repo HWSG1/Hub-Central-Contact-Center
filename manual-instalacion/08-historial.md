@@ -26,3 +26,6 @@ Validación de esta entrega: 61 pruebas aprobadas, docs:check correcto y compila
 - Cambio inicial de contraseña en un segundo paso visual; se mantienen usuario y contraseña inicial en memoria hasta completar el flujo. Volver limpia contraseñas y códigos. No se cambia la API ni SQL.
 - Revisión visual del login local con error visible, sin enviar credenciales: 1920×900, 1366×650, 1280×600, 768×1024, 390×844 y 375×667, sin desbordamiento horizontal/vertical de página. El estado de cambio obligatorio y el proveedor corporativo no se validaron con identidades reales en esta revisión.
 - Compilación API/Angular correcta. Se actualizan instrucciones sobre cuentas de otra PC, TOTP de seis dígitos y errores de servicio. No se ejecutó el bootstrap ni se cambió .env.
+
+## 2026-11-18 · Primer administrador local en base remota
+Se agrega admin:remote para generar un SQL privado de identidad con revisión previa, destino explícito, MFA obligatorio, bloqueo de repetición y auditoría transaccional. No modifica .env ni conecta a SQL. Se actualiza el capítulo 05. Pruebas de generación automatizadas; ejecución real remota pendiente.
