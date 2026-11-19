@@ -1,0 +1,57 @@
+/* Fit the login content first; allow normal scrolling only when zoom/keyboard
+   or an unusually short viewport makes it necessary to keep every field usable. */
+:host {display:block;min-height:100dvh}
+.login-stage {min-height:100dvh;padding:clamp(.75rem,2.4dvh,1.5rem) clamp(1rem,5vw,6rem);display:grid;grid-template-rows:auto 1fr auto;gap:clamp(.5rem,1.6dvh,1rem);overflow:clip}
+.login-content {padding:0;min-width:0;gap:clamp(2rem,6vw,6rem)}
+.glass-card {width:min(100%,31rem);padding:clamp(1rem,2.6dvh,1.75rem);border-radius:1.25rem;min-width:0}
+.login-card-heading {display:flex;align-items:center;gap:.875rem;margin-bottom:clamp(.75rem,2dvh,1.25rem)}
+.security-icon {width:2.75rem;height:2.75rem;flex-shrink:0;font-size:1.75rem;border-radius:.8rem;margin:0}
+.glass-card .eyebrow {font-size:.6875rem;letter-spacing:.12em}
+.glass-card h2 {margin:.25rem 0 0;font-size:clamp(1.25rem,1.6vw,1.5rem);line-height:1.25}
+.login-form {display:grid;gap:clamp(.5rem,1.4dvh,.875rem)}
+.login-field {min-width:0}
+.login-form label {font-size:.9375rem;line-height:1.4;margin:0 0 .375rem}
+.login-form input {font-size:1rem;line-height:1.4;min-height:44px;padding:.625rem .75rem}
+.login-form .password-wrap input {padding-right:4rem}
+.login-optional {font-size:.8125rem;color:#929baa;white-space:nowrap}
+.provider-note {margin:.375rem 0 0;font-size:.8125rem;line-height:1.45}
+.primary-button {margin:0;min-height:44px;padding:.625rem .875rem;font-size:1rem;align-items:center}
+.corporate-button {min-height:44px;padding:.625rem .75rem;font-size:.9375rem}
+.divider {margin:.75rem 0;font-size:.6875rem}
+.login-invitation {margin-top:.625rem}
+.login-invitation a,.login-back {text-decoration:underline;text-underline-offset:.2em}
+.login-back {font-size:.8125rem;min-height:32px;margin-top:.25rem;padding:.25rem 0}
+.login-security {padding-top:.625rem;margin-top:.75rem;font-size:.75rem;line-height:1.4}
+.error-message {margin-top:.625rem;padding:.625rem .75rem;font-size:.875rem;line-height:1.45;overflow-wrap:anywhere}
+.login-step-note {color:#adb4c1;font-size:.875rem;line-height:1.45;margin:0 0 .75rem;overflow-wrap:anywhere}
+.login-intro h1 {margin:1.25rem 0;line-height:1.15}
+.login-footer {font-size:.6875rem;line-height:1.4}
+.setup-note {margin:0;padding:1rem}
+@media (max-height:800px) {
+ .login-stage {padding-block:.75rem;gap:.5rem}
+ .glass-card {padding:1rem 1.25rem}
+ .login-card-heading {margin-bottom:.75rem}
+ .login-form {gap:.5rem}
+ .login-form label {margin-bottom:.25rem}
+ .login-brand small {margin-top:0}
+ .login-security {margin-top:.5rem;padding-top:.5rem}
+}
+@media (max-width:64rem) {
+ .login-intro {display:none}
+ .login-content {justify-content:center}
+ .login-brand {font-size:1rem}
+}
+@media (max-width:40rem) {
+ .login-stage {padding:.75rem;gap:.5rem;grid-template-rows:auto 1fr}
+ .login-brand small {font-size:.5625rem;letter-spacing:.1em}
+ .login-brand .brand-symbol {width:2rem;height:2rem;font-size:1.25rem;border-radius:.625rem}
+ .login-card-heading .security-icon {display:none}
+ .glass-card {padding:1rem;width:min(100%,31rem)}
+ .login-footer {display:none}
+ .login-optional {display:inline}
+}
+@media (max-height:600px) and (min-width:40.001rem) {
+ .login-footer {display:none}
+ .login-stage {grid-template-rows:auto 1fr}
+ .login-card-heading .eyebrow {display:none}
+}

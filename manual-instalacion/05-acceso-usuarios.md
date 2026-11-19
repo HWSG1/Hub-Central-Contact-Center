@@ -24,3 +24,10 @@ Las altas y cambios administrativos requieren MFA y sesión iniciada hace menos 
 
 ## Rol operativo
 Asignar sólo los permisos de negocio registrados por los módulos. No asignar CORE.* al usuario que no debe ver administración. CORE.MODULES.READ corresponde al Centro de módulos administrativo, no al uso de las aplicaciones. Los permisos se suman entre todos los roles asignados. La importación de módulos aún está pendiente; no se deben inventar permisos operativos que no existan.
+
+## Usar una cuenta desde otra PC
+La cuenta local pertenece al portal y se almacena en la base SQL, no en el navegador ni en el equipo. Dos API que atiendan la misma base deben usar la misma MFA_ENCRYPTION_KEY autorizada para poder validar las cuentas existentes. No duplicar el usuario ni ejecutar de nuevo el bootstrap cuando la base ya tiene administrador.
+
+Si la segunda PC apunta a otra base vacía, allí no existe la cuenta creada en desarrollo. admin:local sólo permite el primer administrador de ContactCenterHub_Dev en SQLEXPRESS01 local; no sirve para aprovisionar una base remota de producción. El código TOTP del portal tiene **6 dígitos**, no 8.
+
+El login presenta usuario, contraseña y TOTP. Tras validar las credenciales iniciales y detectar cambio obligatorio, muestra un segundo paso con nueva contraseña, confirmación y TOTP, en vez de acumular campos. Al volver al inicio se borran contraseña y códigos del formulario. El método corporativo sólo aparece si está configurado.

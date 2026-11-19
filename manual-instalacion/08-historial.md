@@ -20,3 +20,9 @@ El usuario aportó capturas de login local y de las cuatro migraciones aplicadas
 Pendiente: importación/ejecución segura de módulos, recuperación de MFA, primer administrador local de producción, validación de IdP real y pruebas integrales de despliegue. Mantener la matriz técnica de controles.
 
 Validación de esta entrega: 61 pruebas aprobadas, docs:check correcto y compilación API/Angular completada. No se ejecutó el SQL consolidado contra ninguna base ni se modificó .env.
+
+## 2026-11-18 · Login ajustado a la altura disponible
+- Se reducen espacios verticales y se integra el icono en el encabezado de la tarjeta. El acceso corporativo se muestra sólo si está habilitado.
+- Cambio inicial de contraseña en un segundo paso visual; se mantienen usuario y contraseña inicial en memoria hasta completar el flujo. Volver limpia contraseñas y códigos. No se cambia la API ni SQL.
+- Revisión visual del login local con error visible, sin enviar credenciales: 1920×900, 1366×650, 1280×600, 768×1024, 390×844 y 375×667, sin desbordamiento horizontal/vertical de página. El estado de cambio obligatorio y el proveedor corporativo no se validaron con identidades reales en esta revisión.
+- Compilación API/Angular correcta. Se actualizan instrucciones sobre cuentas de otra PC, TOTP de seis dígitos y errores de servicio. No se ejecutó el bootstrap ni se cambió .env.

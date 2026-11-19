@@ -21,3 +21,9 @@
 | Activación vencida o bloqueada | Administrador: Usuarios → Renovar activación; entrega un código nuevo. No reiniciar bootstrap. |
 
 Al informar errores, enviar el comando y mensaje sin contraseñas, tokens, claves MFA, cookies ni contenido de .env. La salida de db:check es diagnóstico; no modifica datos. Si falla un comando de instalación, detener la secuencia y corregir ese fallo antes de seguir.
+
+## Mensaje «El servicio de acceso no está disponible»
+Este mensaje corresponde a un fallo de conexión con la API o una respuesta de error del servidor. No demuestra por sí solo una contraseña inválida o que falte el usuario. En la PC donde corre la API, comprobar su terminal y ejecutar npm.cmd run db:check. Revisar servidor, puerto, base, permisos y confianza TLS sin compartir .env ni secretos. Si db:check funciona pero el login sigue fallando, revisar el error de API y las migraciones/permisos de runtime.
+
+## Tamaño del login
+El login adapta espacios a la altura disponible, conserva campos de 16px y controles de al menos 44px. El botón corporativo no configurado no se muestra. El cambio inicial de contraseña es un segundo paso visual; no altera el requisito de MFA ni la validación de la API. En pantallas excepcionalmente bajas, zoom alto o teclado móvil abierto se permite el desplazamiento imprescindible, para no recortar controles.
