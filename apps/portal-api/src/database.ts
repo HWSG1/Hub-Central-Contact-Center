@@ -7,7 +7,7 @@ export class Database implements OnModuleDestroy {
  private pool?:Promise<sql.ConnectionPool>;
  connect(){return this.pool??=this.open().catch(e=>{this.pool=undefined;throw e;});}
  private async open(){
- const options={server:config.SQL_SERVER,port:config.SQL_PORT,database:config.SQL_DATABASE,connectionTimeout:5000,requestTimeout:10000,pool:{max:10,min:0,idleTimeoutMillis:30000},options:{encrypt:true,trustServerCertificate:false}};
+ const options={server:config.SQL_SERVER,port:config.SQL_PORT,database:config.SQL_DATABASE,connectionTimeout:5000,requestTimeout:10000,pool:{max:10,min:0,idleTimeoutMillis:30000},options:{encrypt:true,trustServerCertificate:config.SQL_TRUST_SERVER_CERTIFICATE==='true'}};
  if(config.SQL_AUTH==='windows') return new native.ConnectionPool({...options,driver:'ODBC Driver 17 for SQL Server',options:{...options.options,trustedConnection:true}}).connect();
  return new sql.ConnectionPool({...options,user:config.SQL_USER,password:config.SQL_PASSWORD}).connect();
  }

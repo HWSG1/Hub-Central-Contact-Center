@@ -29,3 +29,6 @@ Validación de esta entrega: 61 pruebas aprobadas, docs:check correcto y compila
 
 ## 2026-11-18 · Primer administrador local en base remota
 Se agrega admin:remote para generar un SQL privado de identidad con revisión previa, destino explícito, MFA obligatorio, bloqueo de repetición y auditoría transaccional. No modifica .env ni conecta a SQL. Se actualiza el capítulo 05. Pruebas de generación automatizadas; ejecución real remota pendiente.
+
+## 2026-11-19 · Confianza configurable del certificado SQL
+Se incorpora SQL_TRUST_SERVER_CERTIFICATE (false por defecto; true por elección explícita del operador). Mantiene encrypt=true en ambos modos de autenticación. db:check distingue conexión cifrada de validación de certificado. No modifica .env ni SQL; ver configuración y limitación de identidad en el capítulo 03.

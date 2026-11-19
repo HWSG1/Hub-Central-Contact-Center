@@ -10,7 +10,7 @@ OIDC Authorization Code + PKCE; asociación explícita issuer+subject. Cuenta lo
 ## ADR 001 — módulos
 Integración frontend en compilación con registro de rutas confiables y lazy loading. No ejecutar ZIP ni rutas de código suministradas por usuarios. Microfrontends no aportan aislamiento; se evaluarán orígenes separados cuando sea necesario.
 ## ADR 002 — persistencia
-SQL Server 2022, SQL parametrizado mediante repositorio; migraciones transaccionales fuera del servicio web. Autenticación Windows preferida en Windows. TLS obligatorio y validación de certificado en runtime.
+SQL Server 2022, SQL parametrizado mediante repositorio; migraciones transaccionales fuera del servicio web. Autenticación Windows preferida en Windows. TLS obligatorio y validación de certificado por defecto en runtime. SQL_TRUST_SERVER_CERTIFICATE=true permite omitir explícitamente la validación por decisión del operador, manteniendo el cifrado; véase el manual 03.
 ## Infraestructura pendiente
 Certificado SQL confiable y nombre DNS coincidente; identidad de servicio; issuer/client OIDC, secreto y redirect URI; política MFA/acr; repositorio firmado y pipeline; SIEM, backup y retención. No se presuponen datos corporativos.
 ## Fases y aceptación

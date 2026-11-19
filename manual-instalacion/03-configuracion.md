@@ -37,7 +37,7 @@ SQL_PASSWORD="CONTRASENA_CONFIGURADA_PRIVADAMENTE"
 
 Con puerto explícito, SQL_SERVER contiene el host/DNS sin barra de instancia y sin coma/puerto. No pegar ejemplos como credenciales reales. Estos valores no crean el login ni la base.
 
-SQL está configurado con encrypt=true y trustServerCertificate=false. La PC o identidad de servicio debe confiar en la cadena CA y resolver el nombre. No añadir una opción para saltar la validación TLS. [Referencia de configuración del proyecto](../apps/portal-api/src/database.ts).
+SQL mantiene encrypt=true. SQL_TRUST_SERVER_CERTIFICATE=false (predeterminado) exige una cadena confiable y nombre DNS coincidente. Por solicitud explícita del operador se admite SQL_TRUST_SERVER_CERTIFICATE=true para confiar en el certificado presentado sin validarlo, como en el otro proyecto. La conexión permanece cifrada, pero se pierde la verificación de identidad del servidor y queda expuesta a suplantación. La opción aplica a autenticación SQL y Windows; db:check informa si la validación fue omitida. No es necesario configurar una instancia cuando se usa el puerto TCP explícito. Reiniciar la API tras cambiar la variable; recompilar si se actualizó el código. [Referencia de configuración del proyecto](../apps/portal-api/src/database.ts).
 
 ## Origen y puertos de la aplicación
 APP_ORIGIN es el origen exacto del navegador, sin ruta ni barra final. localhost y 127.0.0.1 son orígenes diferentes. Si cambia PORT, actualizar también el destino en apps/portal-web/proxy.json y, en despliegue, el proxy de IIS. No configurar CORS abierto para resolver errores de origen.
