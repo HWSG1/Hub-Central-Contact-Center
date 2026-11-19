@@ -12,7 +12,7 @@ Objetivo: controles aplicables ASVS 5.0 nivel 2 y evaluación nivel 3 para opera
 | Seguridad HTTP | Helmet, CSP frontend de build, no-store, sin CORS global | Validación IIS y CSP desplegada pendiente |
 | Auditoría | Login/logout/denegaciones/consulta auditoría, runtime append-only | Recursos y before/after administrativos implementados; pruebas de rollback. Origen/SIEM y permisos SQL reales pendientes |
 | Suministro | Dependencias bloqueadas tras instalación | SCA y revisión humana requeridas antes de UAT |
-| Módulos | Contrato/Schema, registro SQL y catálogo | Importación, verificación firma, cuarentena, estados, pipeline y UI de gestión pendientes |
+| Módulos | Importador de descriptor de módulo incluido, catálogo y API con permisos; instalación/publicación/deshabilitación auditadas | Pruebas automatizadas; integración SQL/UI pendiente en otra PC. Paquetes externos, firmas y pipeline pendientes |
 | Recuperación | Sin endpoint público inseguro | Recuperación segura y política de credenciales comprometidas pendientes |
 Regla de salida: no habilitar cuentas locales administrativas ni operaciones bancarias hasta completar MFA, recuperación, pruebas integrales y revisión de seguridad.
 

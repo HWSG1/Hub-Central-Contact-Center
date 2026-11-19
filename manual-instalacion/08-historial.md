@@ -35,3 +35,9 @@ Se incorpora SQL_TRUST_SERVER_CERTIFICATE (false por defecto; true por elección
 
 ## 2026-11-19 · Selección exclusiva del controlador SQL
 Se elimina la importación simultánea de Tedious y msnodesqlv8, que sobrescribía el registro global de mssql y provocaba connection.queryRaw is not a function con SQL_AUTH=sql. Pruebas de regresión para ambos controladores sin conexión a SQL.
+
+## 2026-11-19 · Plantilla Entra local
+Bloque OIDC preparado con retorno http://localhost:4200/api/auth/callback e instrucciones para Tenant ID, Client ID y valor del secreto. Acceso corporativo permanece apagado hasta completar datos. Documentada transición a HTTPS y pendientes de MFA/asociación de identidad.
+
+## 2026-11-19 · Módulos incluidos y Corta Cuotas
+Centro de módulos con importación de descriptor cerrado, publicación y deshabilitación. Migración 005 registra permisos de administración y uso y permisos SQL de runtime; instalador consolidado regenerado sin alterar 001–004. Operaciones con autoridad transaccional, MFA reciente, alcance y auditoría. Calculadora basada en el Excel, campaña explícita de simulación y sin redondeo intermedio. Pruebas automatizadas y compilación; migración/importación real y prueba visual autenticada pendientes en la otra PC.

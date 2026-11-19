@@ -21,3 +21,5 @@ Aceptación: rechazo sin sesión, usuario deshabilitado/expirado, CSRF incorrect
 Implementada en el módulo Administration: roles, matriz y usuarios. Migración 003 requerida antes de arrancar la API actualizada. Detalle y límites en docs/security/administration.md. No incluye delegación por alcance ; el alta local desde la web se documenta en docs/security/user-enrollment.md.
 
 Alta local por invitación: requiere migración 004; ver docs/security/user-enrollment.md.
+
+Módulos incluidos: importación de descriptor hub-builtin-v1 y control de publicación implementados para CORTA_CUOTAS, migración 005. El frontend usa ruta lazy estática; la lógica de negocio se ejecuta en servidor con permiso y módulo publicado. Paquetes externos y pipeline siguen fuera de esta entrega.

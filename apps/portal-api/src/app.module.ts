@@ -1,4 +1,5 @@
 import {EnrollmentService} from './security/enrollment.service.js';
+import { BusinessController } from './business/business.controller.js';
 import {EnrollmentController} from './security/enrollment.controller.js';
 import { AdminController } from './admin/admin.controller.js';
 import { AdminService } from './admin/admin.service.js';
@@ -12,6 +13,6 @@ import { OidcProvider } from './security/oidc.js';
 import { CatalogController } from './catalog/catalog.controller.js';
 @Global() @Module({providers:[Database,AuthService],exports:[Database,AuthService]}) class CoreDataModule {}
 @Module({imports:[CoreDataModule],controllers:[AuthController,EnrollmentController],providers:[OidcProvider,EnrollmentService]}) class IdentityModule {}
-@Module({imports:[CoreDataModule],controllers:[CatalogController]}) class CatalogModule {}
+@Module({imports:[CoreDataModule],controllers:[CatalogController,BusinessController]}) class CatalogModule {}
 @Module({imports:[CoreDataModule],controllers:[AdminController],providers:[AdminService]}) class AdministrationModule {}
 @Module({imports:[CoreDataModule,IdentityModule,CatalogModule,AdministrationModule],providers:[{provide:APP_GUARD,useClass:SessionGuard}]}) export class AppModule {}

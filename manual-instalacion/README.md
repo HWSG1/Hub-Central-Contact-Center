@@ -1,6 +1,6 @@
 # Manual de instalación y operación — Contact Center Hub
 
-Este es el punto de entrada vigente para instalar y actualizar el sistema. Versión de referencia: aplicación 0.1.0, migraciones 001–004. Revisado: 18/11/2026.
+Este es el punto de entrada vigente para instalar y actualizar el sistema. Versión de referencia: aplicación 0.1.0, migraciones 001–005. Revisado: 19/11/2026.
 
 | Necesidad | Documento |
 |---|---|
@@ -13,6 +13,7 @@ Este es el punto de entrada vigente para instalar y actualizar el sistema. Versi
 | Resolver errores conocidos | [07 · Solución de problemas](07-solucion-problemas.md) |
 | Consultar cambios y evidencia | [08 · Historial](08-historial.md) |
 | Mantener manual y SQL actualizados | [09 · Mantenimiento](09-mantenimiento-manual.md) |
+| Importar módulos y probar Corta Cuotas | [10 · Módulos](10-modulos.md) |
 
 **Único archivo SQL de instalación/actualización:** [sql/Instalar-Actualizar-Hub.sql](sql/Instalar-Actualizar-Hub.sql).
 Se usa tanto para una instalación nueva como para aplicar migraciones pendientes. No ejecutar migraciones individuales. Las fuentes de database/migrations son internas y versionadas; no se eliminan ni se editan después de aplicadas.

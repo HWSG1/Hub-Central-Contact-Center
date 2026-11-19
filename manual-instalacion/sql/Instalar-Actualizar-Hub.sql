@@ -24,7 +24,8 @@ DECLARE @Manifest table(name varchar(200) PRIMARY KEY,sha256 char(64) NOT NULL);
 INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c5d6566862da16cb93c74ea6ae801cf3f0772af294f4''),
 (N''002_local_mfa.sql'',N''c9be5a90540e9485a98ff7c0a175dcfc9780b564e8e3e077a94b3822afd97137''),
 (N''003_security_administration.sql'',N''b47946a7a1243a9daa49f792d0ce6045b3a110b31bd571329a0f3a783e3ca17c''),
-(N''004_user_enrollment.sql'',N''56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c'');
+(N''004_user_enrollment.sql'',N''56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c''),
+(N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
 IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
@@ -149,6 +150,25 @@ GRANT INSERT ON core.local_credentials TO hub_runtime;
 GRANT SELECT,INSERT,UPDATE ON core.user_invitations TO hub_runtime;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''004_user_enrollment.sql'',N''56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c'');
+ END;
+
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''005_builtin_modules.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''SET XACT_ABORT ON;
+INSERT core.permissions(code) VALUES(''''CORE.MODULES.MANAGE''''),(''''CORTA_CUOTAS.USE'''');
+-- Explicit installer grant; importing a descriptor never grants permissions.
+INSERT core.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM core.roles r CROSS JOIN core.permissions p
+WHERE r.code=''''PLATFORM_ADMIN'''' AND p.code IN (''''CORE.MODULES.MANAGE'''',''''CORTA_CUOTAS.USE'''');
+GRANT INSERT ON core.modules TO hub_runtime;
+GRANT UPDATE(enabled) ON core.modules TO hub_runtime;
+GRANT INSERT ON core.module_versions TO hub_runtime;
+GRANT INSERT ON core.module_installations TO hub_runtime;
+GRANT UPDATE(state) ON core.module_installations TO hub_runtime;
+GRANT INSERT ON core.application_catalog TO hub_runtime;
+GRANT UPDATE(published) ON core.application_catalog TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;

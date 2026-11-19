@@ -31,7 +31,7 @@ Con un administrador autorizado: Usuarios → Nuevo usuario. Indicar nombre, log
 Las altas y cambios administrativos requieren MFA y sesión iniciada hace menos de 15 minutos. Se auditan y se restringen a la autoridad del operador. No puedes modificar tu propio acceso ni tus propios roles. Ver [detalle del alta](../docs/security/user-enrollment.md).
 
 ## Rol operativo
-Asignar sólo los permisos de negocio registrados por los módulos. No asignar CORE.* al usuario que no debe ver administración. CORE.MODULES.READ corresponde al Centro de módulos administrativo, no al uso de las aplicaciones. Los permisos se suman entre todos los roles asignados. La importación de módulos aún está pendiente; no se deben inventar permisos operativos que no existan.
+Asignar sólo los permisos de negocio registrados por los módulos. No asignar CORE.* al usuario que no debe ver administración. CORE.MODULES.READ corresponde al Centro de módulos administrativo, no al uso de las aplicaciones. Los permisos se suman entre todos los roles asignados. La importación de módulos incluidos está disponible según el capítulo 10. Para la calculadora usar CORTA_CUOTAS.USE; para su administración CORE.MODULES.READ y CORE.MODULES.MANAGE. No se deben inventar permisos operativos que no existan.
 
 ## Usar una cuenta desde otra PC
 La cuenta local pertenece al portal y se almacena en la base SQL, no en el navegador ni en el equipo. Dos API que atiendan la misma base deben usar la misma MFA_ENCRYPTION_KEY autorizada para poder validar las cuentas existentes. No duplicar el usuario ni ejecutar de nuevo el bootstrap cuando la base ya tiene administrador.

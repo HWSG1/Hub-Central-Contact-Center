@@ -1,4 +1,6 @@
 import { config } from '../config.js';
+import { builtin,builtinHash,descriptor,validateDescriptor } from '../business/registry.js';
+import { BadRequestException } from '@nestjs/common';
 import { opaque,digest } from '../security/policy.js';
 import { newMfaSecret,seal } from '../security/local-mfa.js';
 import { Injectable,ForbiddenException,ConflictException,NotFoundException,UnauthorizedException } from '@nestjs/common';
@@ -13,6 +15,34 @@ export interface RoleInput {code?:string;name:string;description:string;enabled:
 @Injectable()
 export class AdminService {
  constructor(private db:Database){}
+ async moduleList(req:SessionRequest){
+  await this.unscoped(this.db.query.bind(this.db),req.user.id);
+  const installed=(await this.db.query(`SELECT m.id,m.code,m.name,m.enabled,v.version,i.state,i.id AS installation_id FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code ORDER BY i.created_at DESC`,{code:builtin.id})).recordset;
+  return {available:descriptor,installed};
+ }
+ async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;reason:string}){
+  if(input.action==='install'){try{validateDescriptor(JSON.parse(input.manifest??''));}catch{throw new BadRequestException('El manifiesto no corresponde a un módulo incluido en esta versión del Hub.');}}
+  const id=randomUUID();
+  return this.mutate(req,'CORE.MODULES.MANAGE','MODULE.'+input.action.toUpperCase(),'module',id,input.reason,async(q)=>{
+   const current=(await q<{id:string;installation_id:string;state:string}>(`SELECT m.id,i.id AS installation_id,i.state FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code AND v.version=@version`,{code:builtin.id,version:builtin.version})).recordset[0];
+   if(input.action==='install'){
+    if(current||(await q('SELECT id FROM core.modules WHERE code=@code',{code:builtin.id})).recordset.length)throw new ConflictException('El módulo ya está instalado. Recarga la lista.');
+    const versionId=randomUUID(),installationId=randomUUID();
+    await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:builtin.id,name:builtin.name});
+    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:id,version:builtin.version,manifest:JSON.stringify(descriptor),hash:builtinHash});
+    await q("INSERT core.module_installations(id,version_id,requested_by,state) VALUES(@id,@version,@actor,'VALIDATED')",{id:installationId,version:versionId,actor:req.user.id});
+    await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:builtin.name,description:builtin.description,route:builtin.route,permission:builtin.permission});
+    return {before:null,after:{moduleId:id,code:builtin.id,version:builtin.version,state:'VALIDATED',source:'builtin'}};
+   }
+   if(!current)throw new NotFoundException('Primero importa el manifiesto del módulo.');
+   const enabled=input.action==='publish';
+   if(enabled?!['VALIDATED','DISABLED'].includes(current.state):current.state!=='PUBLISHED')throw new ConflictException('El estado cambió o la operación ya se realizó. Recarga la lista.');
+   await q('UPDATE core.modules SET enabled=@enabled WHERE id=@id',{enabled,id:current.id});
+   await q('UPDATE core.application_catalog SET published=@enabled WHERE module_id=@id',{enabled,id:current.id});
+   await q('UPDATE core.module_installations SET state=@state WHERE id=@id',{state:enabled?'PUBLISHED':'DISABLED',id:current.installation_id});
+   return {resourceId:current.id,before:current,after:{moduleId:current.id,code:builtin.id,state:enabled?'PUBLISHED':'DISABLED'}};
+  });
+ }
  private async snapshot(q:Query):Promise<SecurityState>{
  const roles=(await q<Omit<Role,'permissions'>>('SELECT id,code,name,description,enabled,version FROM core.roles ORDER BY name')).recordset;
  const permissions=(await q<{id:string;code:string}>('SELECT id,code FROM core.permissions ORDER BY code')).recordset;
@@ -23,7 +53,7 @@ export class AdminService {
  }
  private async unscoped(q:Query,id:string){if((await q('SELECT TOP(1) user_id FROM core.user_scopes WHERE user_id=@id',{id})).recordset.length)throw new ForbiddenException('Esta administración global requiere una cuenta sin restricciones de alcance.');}
  async read(req:SessionRequest,kind:'roles'|'users'){const q:Query=this.db.query.bind(this.db);await this.unscoped(q,req.user.id);const s=await this.snapshot(q);return kind==='roles'?{roles:s.roles,permissions:s.permissions,ownRoleIds:s.users.find(u=>u.id===req.user.id)?.roles??[]}:{users:s.users,roles:s.roles};}
- private async mutate(req:SessionRequest,permission:string,action:string,resourceType:string,resourceId:string,reason:string,apply:(q:Query,s:SecurityState)=>Promise<{before:unknown;after:unknown}>){
+ private async mutate(req:SessionRequest,permission:string,action:string,resourceType:string,resourceId:string,reason:string,apply:(q:Query,s:SecurityState)=>Promise<{before:unknown;after:unknown;resourceId?:string}>){
  const tx=(await this.db.connect()).transaction();await tx.begin();
  const q:Query=async <T>(text:string,params:Record<string,unknown>={})=>{const request=tx.request();for(const [key,value]of Object.entries(params))request.input(key,value);return request.query<T>(text);};
  try {
@@ -35,8 +65,8 @@ export class AdminService {
  await this.unscoped(q,actor.id);
  if(!effective(s,actor.id).includes(permission))throw new ForbiddenException('No tienes permiso para esta acción.');
  const change=await apply(q,s);preserveAdministrator(s);
- await q('INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,\'SUCCESS\',@correlation,@type,@id,@details)',{actor:actor.id,action,correlation:req.correlation,type:resourceType,id:resourceId,details:JSON.stringify({reason,...change})});
- await tx.commit();return {ok:true,id:resourceId};
+ await q('INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,\'SUCCESS\',@correlation,@type,@id,@details)',{actor:actor.id,action,correlation:req.correlation,type:resourceType,id:change.resourceId??resourceId,details:JSON.stringify({reason,...change})});
+ await tx.commit();return {ok:true,id:change.resourceId??resourceId};
  }catch(error){await tx.rollback().catch(()=>{});if(error instanceof PolicyDenied||error instanceof ForbiddenException){await this.db.query('INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,\'DENIED\',@correlation,@type,@id,@details)',{actor:req.user.id,action,correlation:req.correlation,type:resourceType,id:resourceId,details:JSON.stringify({message:error.message})});if(error instanceof PolicyDenied)throw new ForbiddenException(error.message);}throw error;}
  }
  async saveRole(req:SessionRequest,id:string|undefined,input:RoleInput){const resourceId=id??randomUUID();return this.mutate(req,'CORE.ROLES.MANAGE',id?'ROLE.UPDATE':'ROLE.CREATE','role',resourceId,input.reason,async(q,s)=>{

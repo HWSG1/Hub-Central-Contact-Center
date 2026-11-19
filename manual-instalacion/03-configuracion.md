@@ -50,3 +50,10 @@ LOCAL_AUTH_ENABLED=true habilita el método de acceso local; no crea usuarios. P
 MFA_ENCRYPTION_KEY debe conservarse para todas las cuentas cifradas de una base. No reemplazarla para resolver un error de login. Separar claves entre ambientes, pero compartir la misma clave autorizada entre instancias de API que atiendan la misma base. Respaldar base y clave por procedimientos seguros y separados.
 
 OIDC requiere issuer HTTPS, client ID, secreto, callback APP_ORIGIN/api/auth/callback y MFA del proveedor, además de asociación explícita de la identidad al usuario. Ver [autenticación](../docs/security/authentication.md). Reiniciar la API tras un cambio de configuración.
+
+## Microsoft Entra: prueba local y posterior publicación
+En Registros de aplicaciones → Autenticación → plataforma Web, registrar http://localhost:4200/api/auth/callback. La URI la proporciona el responsable del Hub y el administrador Entra la registra. Usar APP_ORIGIN=http://localhost:4200 y NODE_ENV=development; el proxy de Angular reenvía /api a la API en 3000. Navegador, frontend y API deben ejecutarse en el equipo de prueba.
+
+El bloque OIDC de .env.example deja issuer/client/secret vacíos hasta recibirlos. Completar OIDC_ISSUER=https://login.microsoftonline.com/TENANT_ID/v2.0, OIDC_CLIENT_ID con el ID de aplicación y OIDC_CLIENT_SECRET con el valor del secreto entre comillas. Mantener OIDC_REDIRECT_URI=http://localhost:4200/api/auth/callback y reiniciar API. El .env privado no viaja con Git; trasladar el bloque manualmente a la PC de prueba sin sobrescribir SQL ni MFA.
+
+Posteriormente se puede agregar la URI HTTPS publicada en Entra y cambiar APP_ORIGIN/OIDC_REDIRECT_URI en el despliegue; se recomienda un registro separado para producción y pruebas. La configuración prepara el flujo, pero no acredita integración terminada: falta validar la política MFA de Entra y adaptar su evidencia al chequeo actual amr=mfa, además de asociar las identidades a usuarios y roles del Hub.

@@ -1,0 +1,10 @@
+{
+  "format": "hub-builtin-v1",
+  "id": "CORTA_CUOTAS",
+  "version": "1.0.0",
+  "name": "Calculadora Corta Cuotas",
+  "route": "/modules/corta-cuotas",
+  "permission": "CORTA_CUOTAS.USE",
+  "description": "Simula comisiones, cuota de capital y primer pago según el Excel de referencia.",
+  "descriptorSha256": "ffc6eadbf28cb9a30ee2f955754b5f3bf0d9add2215fb9662330e866a05d831e"
+}
