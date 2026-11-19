@@ -1,0 +1,1 @@
+import { Component } from '@angular/core';import { RouterLink } from '@angular/router';@Component({imports:[RouterLink],template:'<section class="empty-state"><h1>Esta herramienta no está disponible</h1><p>La ruta no corresponde a un módulo integrado y autorizado.</p><a routerLink="/">Volver al inicio</a></section>'})export class Unavailable{}

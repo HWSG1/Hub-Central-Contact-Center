@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "projects": {
+    "portal-web": {
+      "projectType": "application",
+      "root": "apps/portal-web",
+      "sourceRoot": "apps/portal-web/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/portal-web/src/main.ts",
+            "index": "apps/portal-web/src/index.html",
+            "tsConfig": "apps/portal-web/tsconfig.app.json",
+            "styles": [
+              "apps/portal-web/src/styles.css"
+            ],
+            "outputPath": "dist/web",
+            "security": {
+              "autoCsp": true
+            }
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "700kB",
+                  "maximumError": "1MB"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "portal-web:build"
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": "89cc5cca-7729-4fbe-86be-b34cb99ebaae"
+  }
+}

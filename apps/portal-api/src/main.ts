@@ -1,0 +1,20 @@
+import 'reflect-metadata';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe,Logger } from '@nestjs/common';
+import { json } from 'express';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import { randomUUID } from 'node:crypto';
+import { AppModule } from './app.module.js';
+import { config } from './config.js';
+import type { Request,Response,NextFunction } from 'express';
+async function start(){const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn','log']});app.setGlobalPrefix('api');
+ app.use(helmet({strictTransportSecurity:config.NODE_ENV==='production'?{maxAge:31536000,includeSubDomains:true}:false}));
+ app.use(json({limit:'16kb'}));app.use(cookieParser());
+ app.use((req:Request,res:Response,next:NextFunction)=>{Object.assign(req,{correlation:randomUUID()});res.setHeader('Cache-Control','no-store');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');next();});
+ app.use('/api',rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-8',legacyHeaders:false}));
+ app.use('/api/auth/activation',rateLimit({windowMs:900000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}));
+ app.use('/api/auth/login',rateLimit({windowMs:900000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}));
+ app.useGlobalPipes(new ValidationPipe({whitelist:true,forbidNonWhitelisted:true,transform:true}));app.enableShutdownHooks();await app.listen(config.PORT,'127.0.0.1');Logger.log('Contact Center Hub API en loopback');}
+start().catch(()=>{console.error('No fue posible iniciar API. Revise configuración y servicios.');process.exitCode=1;});

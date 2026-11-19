@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Contact Center Hub manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "description",
+    "version",
+    "author",
+    "owner",
+    "minimumPortalVersion",
+    "contractVersion",
+    "routes",
+    "permissions",
+    "dependencies",
+    "services",
+    "apis",
+    "configuration",
+    "migrations",
+    "healthCheck",
+    "infrastructure",
+    "updatePolicy",
+    "artifact"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 150
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "author": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "minimumPortalVersion": {
+      "type": "string"
+    },
+    "contractVersion": {
+      "const": "1"
+    },
+    "routes": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "string",
+        "pattern": "^/modules/[a-z0-9/-]+$"
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]+\\.[A-Z0-9_.]+$"
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "apis": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "configuration": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "migrations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "healthCheck": {
+      "type": "string",
+      "pattern": "^/api/"
+    },
+    "infrastructure": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "updatePolicy": {
+      "enum": [
+        "manual-approved"
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "signatureKeyId"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "signatureKeyId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

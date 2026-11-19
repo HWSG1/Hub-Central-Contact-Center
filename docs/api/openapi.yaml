@@ -1,0 +1,285 @@
+openapi: 3.1.0
+info:
+  title: Contact Center Hub BFF
+  version: 0.1.0
+servers:
+  - url: /api
+security:
+  - sessionCookie: []
+paths:
+  /auth/providers:
+    get:
+      security: []
+      responses:
+        '200': {description: Métodos de acceso habilitados}
+  /auth/login:
+    post:
+      security: []
+      description: Requiere Origin exacto. Rate limit y DTO estricto.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: {type: string, maxLength: 128}
+                password: {type: string, maxLength: 256}
+                otp: {type: string, pattern: "^[0-9]{6}$"}
+                newPassword: {type: string, minLength: 15, maxLength: 128}
+      responses:
+        '201': {description: Cookie de sesión y CSRF, o requiresPasswordChange sin sesión tras validar contraseña y MFA}
+        '401': {description: No fue posible autenticar}
+        '429': {description: Límite de intentos}
+  /auth/me:
+    get:
+      responses:
+        '200': {description: Identidad interna y permisos efectivos}
+        '401': {description: Sesión inválida}
+  /auth/logout:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Csrf'
+      responses:
+        '201': {description: Sesión revocada}
+        '403': {description: CSRF u origen inválido}
+  /auth/revoke-all:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Csrf'
+      responses:
+        '201': {description: Sesiones propias revocadas}
+  /auth/corporate:
+    get:
+      security: []
+      responses:
+        '302': {description: Redirección al proveedor OIDC configurado}
+  /auth/callback:
+    get:
+      security: []
+      responses:
+        '302': {description: Retorno OIDC validado o login con error genérico}
+  /catalog:
+    get:
+      responses:
+        '200': {description: Aplicaciones publicadas y autorizadas}
+  /modules:
+    get:
+      description: Exige CORE.MODULES.READ
+      responses:
+        '200': {description: Registro técnico}
+        '403': {description: Sin permiso}
+  /audit:
+    get:
+      description: Exige CORE.AUDIT.READ
+      responses:
+        '200': {description: Últimos 100 eventos}
+        '403': {description: Sin permiso}
+  /admin/roles:
+    get:
+      description: Consulta roles y permisos. CORE.ROLES.READ. Ver docs/security/administration.md para controles y uso.
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+    post:
+      description: Crea un rol sin permisos. Requiere CORE.ROLES.MANAGE y MFA reciente.
+      responses:
+        '201': {description: Rol creado}
+        '403': {description: Sin autoridad}
+        '409': {description: Código existente}
+  /admin/users:
+    get:
+      description: Consulta cuentas existentes. CORE.USERS.READ. Ver docs/security/administration.md para controles y uso.
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+    post:
+      description: Crea cuenta local pendiente e invitación de 24h. Requiere CORE.USERS.CREATE, sesión MFA reciente y CORE.USERS.ROLES_ASSIGN si roles no está vacío.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, name, roles, reason]
+              properties:
+                username: {type: string, minLength: 3, maxLength: 128, pattern: '^[a-zA-Z0-9][a-zA-Z0-9@._-]*$'}
+                name: {type: string, minLength: 1, maxLength: 120}
+                roles: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, format: uuid}}
+                reason: {type: string, minLength: 5, maxLength: 500}
+      responses:
+        '201': {description: id y activationCode privado que se muestra una sola vez; expiresInHours 24}
+        '403': {description: Sin autoridad o MFA reciente}
+        '409': {description: Usuario existente}
+
+  /admin/roles/{id}:
+    patch:
+      description: Edita rol. CORE.ROLES.MANAGE. Ver docs/security/administration.md para controles y uso.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+  /admin/roles/{id}/permissions:
+    put:
+      description: Asigna permisos. CORE.PERMISSIONS.ASSIGN. Ver docs/security/administration.md para controles y uso.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+  /admin/users/{id}/roles:
+    put:
+      description: Asigna roles. CORE.USERS.ROLES_ASSIGN. Ver docs/security/administration.md para controles y uso.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+  /admin/users/{id}/status:
+    patch:
+      description: Estado. CORE.USERS.READ y CORE.USERS.UPDATE o CORE.USERS.DISABLE. Ver docs/security/administration.md para controles y uso.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Operación completada}
+        '401': {description: Sesión no válida}
+        '403': {description: Sin autoridad o sesión MFA reciente}
+        '409': {description: Versión desactualizada}
+  /admin/users/{id}/invitation:
+    post:
+      description: Renueva invitación pendiente con CORE.USERS.CREATE y MFA reciente. Invalida código y clave MFA anteriores.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, reason]
+              properties:
+                version: {type: integer, minimum: 1}
+                reason: {type: string, minLength: 5, maxLength: 500}
+      responses:
+        '201': {description: Nuevo activationCode privado y expiresInHours 24}
+        '403': {description: Sin autoridad}
+        '409': {description: Cuenta activada o deshabilitada o versión desactualizada}
+  /auth/activation/begin:
+    post:
+      security: []
+      description: Valida invitación local y devuelve username y manualKey privados. Requiere Origin exacto. No crea sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: {type: string, pattern: '^[A-Za-z0-9_-]{43}
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: hub_session
+  parameters:
+    Csrf:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string}
+}
+      responses:
+        '201': {description: Configuración MFA privada; Cache-Control no-store}
+        '401': {description: Invitación no disponible}
+        '403': {description: Origin inválido}
+        '429': {description: Límite de intentos}
+  /auth/activation/complete:
+    post:
+      security: []
+      description: Consume invitación, fija contraseña personal y MFA. Requiere Origin exacto. No crea sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token, password, otp]
+              properties:
+                token: {type: string, pattern: '^[A-Za-z0-9_-]{43}
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: hub_session
+  parameters:
+    Csrf:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string}
+}
+                password: {type: string, minLength: 15, maxLength: 128}
+                otp: {type: string, pattern: '^[0-9]{6}
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: hub_session
+  parameters:
+    Csrf:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string}
+}
+      responses:
+        '201': {description: Cuenta activada; iniciar sesión por login normal}
+        '400': {description: Contraseña inválida}
+        '401': {description: Invitación o MFA inválido}
+        '403': {description: Origin inválido}
+        '429': {description: Límite de intentos}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: hub_session
+  parameters:
+    Csrf:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string}
