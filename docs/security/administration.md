@@ -1,3 +1,5 @@
+> Instalación vigente: [manual central](../../manual-instalacion/README.md). Las referencias a instaladores separados y evidencias de bloqueo siguientes son históricas; para ejecutar SQL usar el consolidado del manual.
+
 # Administración de roles, permisos y usuarios
 
 ## Activación local

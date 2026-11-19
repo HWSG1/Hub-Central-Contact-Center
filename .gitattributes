@@ -1,0 +1,5 @@
+# Los hashes de migraciones deben ser iguales en todas las PCs.
+/database/migrations/*.sql text eol=lf
+/database/migrations/checksums.json text eol=lf
+/manual-instalacion/** text eol=lf
+/scripts/build-install-sql.cjs text eol=lf

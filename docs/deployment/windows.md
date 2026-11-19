@@ -1,3 +1,5 @@
+> Instalación vigente: [manual central](../../manual-instalacion/README.md). Las referencias a instaladores separados y evidencias de bloqueo siguientes son históricas; para ejecutar SQL usar el consolidado del manual.
+
 # Desarrollo y despliegue Windows
 ## SQL Server
 Instancia solicitada: SQLEXPRESS01. Registro local: MSSQL16.SQLEXPRESS01, TCP 14331. La conexión cifrada a localhost:14331 respondió con cadena de certificación no confiable. No se creó ni modificó una base.

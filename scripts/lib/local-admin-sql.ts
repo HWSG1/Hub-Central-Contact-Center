@@ -12,7 +12,7 @@ export function localAdminSql(p:AdminPlan){
  IF @lock<0 THROW 51100,'No se obtuvo bloqueo de migraciones.',1;
  EXEC @lock=sys.sp_getapplock @Resource='hub_bootstrap',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=10000;
  IF @lock<0 THROW 51101,'No se obtuvo bloqueo de inicializacion.',1;
- IF OBJECT_ID('dbo.hub_migrations') IS NULL THROW 51102,'Ejecute primero Install-Local.sql.',1;
+ IF OBJECT_ID('dbo.hub_migrations') IS NULL THROW 51102,'Ejecute primero el SQL consolidado del manual.',1;
  IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name='001_core.sql' AND sha256='${coreHash}') THROW 51103,'La migracion inicial no coincide.',1;
  IF EXISTS(SELECT 1 FROM core.system_settings WHERE name='bootstrap_complete') OR EXISTS(SELECT 1 FROM core.user_roles ur JOIN core.roles r ON r.id=ur.role_id WHERE r.code='PLATFORM_ADMIN') THROW 51104,'Ya existe una inicializacion o administrador. No se permite repetir el alta inicial.',1;
  IF NOT EXISTS(SELECT 1 FROM core.roles WHERE code='PLATFORM_ADMIN') THROW 51105,'Falta el rol inicial.',1;
@@ -34,7 +34,7 @@ export function localAdminSql(p:AdminPlan){
  SET NOCOUNT ON;
  IF COALESCE(CONVERT(nvarchar(128),SERVERPROPERTY('MachineName')),N'')<>${literal(p.machine)} OR COALESCE(CONVERT(nvarchar(128),SERVERPROPERTY('InstanceName')),N'')<>N'SQLEXPRESS01' THROW 51110,'Servidor local incorrecto.',1;
  IF @@TRANCOUNT<>0 THROW 51111,'Ejecutar fuera de una transaccion existente.',1;
- IF DB_ID('ContactCenterHub_Dev') IS NULL THROW 51112,'Ejecute primero Install-Local.sql.',1;
+ IF DB_ID('ContactCenterHub_Dev') IS NULL THROW 51112,'Ejecute primero el SQL consolidado del manual.',1;
  EXEC sys.sp_executesql ${literal(inner)};
 `;
 }

@@ -1,3 +1,5 @@
+> Registro histórico de verificaciones. Para estado y procedimiento vigentes, ver [manual e historial](../manual-instalacion/08-historial.md). Los bloqueos iniciales que siguen no describen necesariamente el entorno actual.
+
 # Contact Center Hub — entrega inicial
 
 Ubicación: E:\Odair\Proyectos Personales\Angular\contact-center-hub

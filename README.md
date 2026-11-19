@@ -1,31 +1,26 @@
-# Contact Center Hub — Enterprise Modular Platform
-Proyecto local Angular 22 + NestJS 12 + SQL Server 2022. Implementación inicial de fases 0 y 1; no es una plataforma bancaria certificada ni está listo para producción.
+# Contact Center Hub
 
-## Qué incluye
-Login premium inspirado en los HTML, layout responsive, modo oscuro, catálogo autorizado, sesión BFF persistida, OIDC Code+PKCE, autenticación local Argon2id deshabilitada inicialmente, guard RBAC, auditoría inicial, migración SQL y aprovisionamiento corporativo por CLI.
+Portal Angular + API NestJS + SQL Server 2022. Incluye autenticación local con MFA, soporte OIDC, roles/permisos, administración de usuarios, activación por invitación, catálogo y auditoría. La importación de módulos y otros controles de producción siguen pendientes; no se declara una plataforma bancaria certificada.
 
-## Preparación
-1. Node 24 LTS >=24.15, npm y Microsoft ODBC Driver para SQL Server.
-2. npm ci.
-3. Copiar .env.example a .env y configurar SQL cifrado. Instancia SQLEXPRESS01 detectada en puerto 14331.
-4. Resolver certificado confiable; ejecutar scripts/create-database.sql con cuenta instaladora y npm run db:migrate.
-5. Configurar IdP corporativo y aprovisionar identidad autorizada según docs/security/authentication.md.
-6. npm test; npm run build.
-7. npm run start:api y npm run start:web en terminales separadas. Abrir http://localhost:4200.
+## Instalar o actualizar
+Comenzar por [el manual de instalación](manual-instalacion/README.md). Contiene requisitos, instalación en otra PC, configuración, acceso, despliegue y solución de problemas.
 
-No hay cuenta de prueba ni contraseña de acceso. Sin IdP configurado el login comunica que no está disponible; no concede acceso.
+**SQL único:** [Instalar-Actualizar-Hub.sql](manual-instalacion/sql/Instalar-Actualizar-Hub.sql), generado desde migraciones versionadas. Sirve para instalaciones nuevas y migraciones pendientes. Por defecto sólo revisa; exige servidor y base explícitos.
 
-## Documentación
-- docs/architecture/phase-0.md: alcance, ADR y criterios.
-- docs/architecture/data-model.md: modelo de datos.
-- docs/security/: amenazas, controles, RBAC y autenticación.
-- docs/deployment/windows.md: SQL, IIS, servicio y operación.
-- packages/module-sdk/: contrato y manifiesto inicial.
+## Arranque de desarrollo
+Con Node 24.x >=24.15, .env configurado, base e identidad inicial preparadas según el manual:
 
-## Pendiente
-SQL real bloqueado por certificado no confiable. Configuración IdP y MFA corporativo requiere Infraestructura. Fase 2 (administración, MFA local, recuperación), fase 3 (carga/validación de paquetes y SDK completo), fases 4/5 (firma, pipeline, revisión y UAT) no están completadas. No se modificó SAP HANA ni se desplegó producción.
+~~~powershell
+npm.cmd ci
+npm.cmd run build
+~~~
 
-Evidencia de compilación, pruebas y vulnerabilidad pendiente en tooling: docs/verification.md. No confundir npm audit de producción sin alertas con ausencia de riesgos en desarrollo.
+En dos terminales: npm.cmd run start:api y npm.cmd run start:web. Abrir http://localhost:4200. dist y .env no se incluyen en GitHub: compilar y configurar en cada instalación. No hay credenciales predeterminadas.
 
-## Administrador local (actualización)
-Ejecutar npm.cmd run admin:local y seguir docs/deployment/local-admin.md. Genera alta para SSMS, configura MFA y exige cambio inicial. Verificar SQL con npm.cmd run db:check. No hay credenciales predeterminadas.
+## Desarrollo y documentación
+- npm.cmd test: pruebas y verificación del manual/SQL.
+- npm.cmd run docs:build: regenerar SQL consolidado sin conectar a SQL.
+- npm.cmd run docs:check: verificar artefacto y hashes.
+- [Arquitectura](docs/architecture/phase-0.md), [controles](docs/security/controls.md) y [SDK de módulos](packages/module-sdk/README.md).
+
+Actualizar manual e historial junto con cada cambio relevante, según AGENTS.md. Nunca publicar .env ni .local.

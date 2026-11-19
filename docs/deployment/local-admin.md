@@ -1,3 +1,5 @@
+> Instalación vigente: [manual central](../../manual-instalacion/README.md). Las referencias a instaladores separados y evidencias de bloqueo siguientes son históricas; para ejecutar SQL usar el consolidado del manual.
+
 # Primer administrador local — Contact Center Hub
 
 Esta entrega añade alta por terminal/SSMS, MFA TOTP y cambio de contraseña inicial. No crea cuentas ni contraseñas automáticamente.

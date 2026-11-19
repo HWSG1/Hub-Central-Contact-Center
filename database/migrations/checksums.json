@@ -1,0 +1,6 @@
+{
+  "001_core.sql": "f70e4d57c4cd3b7956f4c5d6566862da16cb93c74ea6ae801cf3f0772af294f4",
+  "002_local_mfa.sql": "c9be5a90540e9485a98ff7c0a175dcfc9780b564e8e3e077a94b3822afd97137",
+  "003_security_administration.sql": "b47946a7a1243a9daa49f792d0ce6045b3a110b31bd571329a0f3a783e3ca17c",
+  "004_user_enrollment.sql": "56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c"
+}
