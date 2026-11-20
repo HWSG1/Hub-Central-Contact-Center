@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {zipSync,strToU8} from 'fflate';
+import {inspectPackage} from '../../apps/portal-api/src/business/package.js';
+import {descriptor} from '../../apps/portal-api/src/business/registry.js';
+const archive=(files:Record<string,Uint8Array>)=>Buffer.from(zipSync(files)).toString('base64');
+const manifest=strToU8(JSON.stringify(descriptor));
+test('ZIP descriptor matches trusted built-in registry',()=>{const r=inspectPackage(archive({'manifest.json':manifest}));assert.deepEqual(r.manifest,descriptor);assert.equal(r.sha256.length,64);});
+test('rejects executable, traversal, missing or nested manifests',()=>{for(const files of [{'manifest.json':manifest,'run.sql':strToU8('DROP TABLE core.users')},{'../manifest.json':manifest},{'folder/manifest.json':manifest},{}])assert.throws(()=>inspectPackage(archive(files)));});
+test('rejects oversized decompressed entries before inflation',()=>assert.throws(()=>inspectPackage(archive({'manifest.json':strToU8(' '.repeat(100000))}))));
+test('rejects invalid ZIP, noncanonical base64 and oversized input',()=>{for(const value of ['no zip','YWJj','a'.repeat(11000)])assert.throws(()=>inspectPackage(value));});
+test('rejects unknown modules and privilege or route changes',()=>{for(const change of [{id:'NEW_MODULE'},{permission:'CORE.USERS.CREATE'},{route:'/admin/users'},{script:'evil.js'}])assert.throws(()=>inspectPackage(archive({'manifest.json':strToU8(JSON.stringify({...descriptor,...change}))})));});

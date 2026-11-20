@@ -21,3 +21,5 @@ Alta de usuarios local: migración 004, permiso CORE.USERS.CREATE, invitación d
 Bootstrap remoto local: admin:remote genera SQL privado con destino explícito y revisión por defecto; exige migraciones verificadas, MFA y cambio inicial, y rechaza bootstrap existente. Validación automatizada del generador; integración SQL remota y recuperación pendientes.
 
 SQL TLS: cifrado obligatorio; validación del certificado por defecto. Excepción solicitada por el operador: SQL_TRUST_SERVER_CERTIFICATE=true omite la autenticación del servidor mediante certificado. No considerar verificada la identidad SQL con esa opción; pendiente prueba remota.
+
+Asistente ZIP inicial: pruebas automatizadas de límites, archivos no admitidos, manifiesto alterado y autoridad/MFA/auditoría. No se extraen ni ejecutan artefactos. Validación integral del asistente con SQL y sesión real pendiente; firmas y despliegue externo no implementados.

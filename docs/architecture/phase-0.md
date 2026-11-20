@@ -23,3 +23,5 @@ Implementada en el módulo Administration: roles, matriz y usuarios. Migración 
 Alta local por invitación: requiere migración 004; ver docs/security/user-enrollment.md.
 
 Módulos incluidos: importación de descriptor hub-builtin-v1 y control de publicación implementados para CORTA_CUOTAS, migración 005. El frontend usa ruta lazy estática; la lógica de negocio se ejecuta en servidor con permiso y módulo publicado. Paquetes externos y pipeline siguen fuera de esta entrega.
+
+Asistente inicial ZIP: /modules/import organiza análisis, configuración, acceso, impacto, instalación y publicación. La API admite un único manifest.json de módulo incluido, sin extracción ni ejecución. El análisis se audita y el paquete se revalida en la instalación. El servicio separado para desplegar módulos nuevos permanece pendiente.

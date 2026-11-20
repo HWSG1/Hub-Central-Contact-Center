@@ -41,3 +41,17 @@ Bloque OIDC preparado con retorno http://localhost:4200/api/auth/callback e inst
 
 ## 2026-11-19 · Módulos incluidos y Corta Cuotas
 Centro de módulos con importación de descriptor cerrado, publicación y deshabilitación. Migración 005 registra permisos de administración y uso y permisos SQL de runtime; instalador consolidado regenerado sin alterar 001–004. Operaciones con autoridad transaccional, MFA reciente, alcance y auditoría. Calculadora basada en el Excel, campaña explícita de simulación y sin redondeo intermedio. Pruebas automatizadas y compilación; migración/importación real y prueba visual autenticada pendientes en la otra PC.
+
+## 2026-11-19 · Acceso a Corta Cuotas desde el catálogo
+Se sustituye el texto provisional de las tarjetas de Mis aplicaciones por un enlace Angular a la calculadora cuando código y ruta coinciden con el módulo incluido. No se aceptan destinos arbitrarios del catálogo. No requiere migración ni reimportación del módulo; actualizar frontend.
+
+## 2026-11-19 · Reconciliación puntual de historial local
+Evidencia del usuario: historial 001/002 y objetos/permisos de 003/004 preexistentes. Preparado artefacto privado con comprobaciones de estructura y permisos, bloqueos transaccionales, destino local explícito, revisión por defecto y auditoría antes de completar historial. Hashes contrastados con migraciones originales y sintaxis validada con ScriptDom SQL Server 2022; no ejecutado contra la base. No se alteraron migraciones ni sus hashes.
+
+## 2026-11-19 · GUID SQL en administración
+Se corrige el rechazo de identificadores uniqueidentifier no compatibles con la validación RFC de UUID. Alta de usuarios, asignación de roles y parámetros de rutas usan formato GUID completo. Se conservan validación de estructura, límite y unicidad de roles y controles de autoridad. Incluye pruebas de DTO reales y parámetros con GUID SQL y entradas malformadas.
+
+## 20/11/2026 — Asistente inicial ZIP
+- Flujo de seis pasos para módulos incluidos, descarga del paquete de ejemplo, análisis del servidor, instalación y publicación independientes.
+- Contrato limitado a manifest.json: tamaño acotado, registro estricto, sin extracción ni ejecución de código; análisis auditado y revalidación al instalar. Permisos y MFA se revalidan transaccionalmente.
+- Pruebas de paquetes alterados, tamaño, rutas, autoridad, MFA y auditoría. Sin cambios de esquema. Despliegue de código externo y pruebas de integración con sesión/SQL reales siguen pendientes.

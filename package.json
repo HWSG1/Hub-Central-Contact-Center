@@ -37,6 +37,7 @@
     "cookie-parser": "^1.4.7",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "fflate": "^0.8.3",
     "helmet": "^8.1.0",
     "msnodesqlv8": "^5.1.1",
     "mssql": "^12.1.0",

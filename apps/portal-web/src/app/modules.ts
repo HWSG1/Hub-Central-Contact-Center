@@ -21,7 +21,7 @@ interface Descriptor {name:string;id:string;version:string;permission:string;des
  @if(row.enabled&&has('CORTA_CUOTAS.USE')){<a routerLink="/modules/corta-cuotas">Abrir calculadora →</a>}}}
  @else{<p>Este módulo todavía no está instalado.</p>}
  @if(has('CORE.MODULES.MANAGE')){
- <div class="module-actions"><button type="button" (click)="download()">Descargar manifiesto de prueba</button></div>
+ <div class="module-actions"><a routerLink="/modules/import">Importar paquete ZIP →</a><button type="button" (click)="download()">Descargar manifiesto de prueba</button></div>
  <label>Motivo del cambio<textarea [(ngModel)]="reason" maxlength="500" rows="2" placeholder="Describe por qué realizas esta operación"></textarea></label>
  @if(!rows().length){
  <label>Importar manifiesto JSON<input type="file" accept=".json,application/json" (change)="select($event)" [disabled]="busy()"></label>

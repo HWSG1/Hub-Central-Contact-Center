@@ -1,3 +1,4 @@
+import { inspectPackage } from '../business/package.js';
 import { config } from '../config.js';
 import { builtin,builtinHash,descriptor,validateDescriptor } from '../business/registry.js';
 import { BadRequestException } from '@nestjs/common';
@@ -15,6 +16,12 @@ export interface RoleInput {code?:string;name:string;description:string;enabled:
 @Injectable()
 export class AdminService {
  constructor(private db:Database){}
+ async package(req:SessionRequest,input:{archive:string;reason:string},install=false){
+  let report;try{report=inspectPackage(input.archive);}catch{throw new BadRequestException('Paquete rechazado: usa el ZIP de módulo incluido, con manifest.json sin archivos adicionales (máximo 8 KB). Los paquetes con código nuevo requieren un instalador todavía no disponible.');}
+  if(install)return this.manageModule(req,{action:'install',manifest:JSON.stringify(report.manifest),reason:input.reason});
+  await this.mutate(req,'CORE.MODULES.MANAGE','MODULE.ANALYZE','module',randomUUID(),input.reason,async()=>({before:null,after:{sha256:report.sha256,code:report.manifest.id,version:report.manifest.version}}));
+  return report;
+ }
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
   const installed=(await this.db.query(`SELECT m.id,m.code,m.name,m.enabled,v.version,i.state,i.id AS installation_id FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code ORDER BY i.created_at DESC`,{code:builtin.id})).recordset;

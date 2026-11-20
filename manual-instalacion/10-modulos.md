@@ -40,3 +40,15 @@ Caso de referencia guardado en Excel: L18,000, 12 meses, sin campaña → comisi
 
 ## Verificación y pendientes
 Pruebas automatizadas: importación alterada, ciclo de vida, duplicados, autoridad, sesión reciente, alcance, rollback de auditoría, permisos del endpoint, límites de monto y todos los plazos. Compilación API/Angular y SQL consolidado comprobados. No se ejecutó la migración ni la importación en producción; prueba visual y recorrido real con la sesión del administrador en la otra PC pendientes. El usuario debe aplicar la migración e importar/publicar allí.
+
+
+## Asistente ZIP (20/11/2026)
+Centro de módulos → Importar paquete ZIP abre /modules/import. Descargar el ZIP de Corta Cuotas, seleccionarlo y escribir el motivo. El asistente recorre carga, análisis del servidor, configuración, seguridad, impacto e instalación, y publicación separada. Requiere CORE.MODULES.MANAGE, cuenta sin restricciones de alcance y MFA de menos de 15 minutos; descargar el ejemplo también requiere CORE.MODULES.READ.
+
+Contrato inicial: ZIP de hasta 8 KB con un único manifest.json de hasta 8 KB, descriptor hub-builtin-v1 exacto del módulo incluido. Se rechazan otros nombres, archivos adicionales y módulos desconocidos. No se extraen archivos al disco ni se ejecutan SQL, JavaScript o comandos subidos. SHA-256 identifica el ZIP, no acredita firma digital. Análisis e instalación se verifican en servidor; instalar vuelve a analizar el paquete. El análisis se audita y no instala. Instalar crea registros en una transacción y deja el módulo sin publicar; publicar es una operación independiente auditada. Los roles se asignan desde Roles y permisos con su autorización propia. No se asignan privilegios automáticamente.
+
+Para una instalación existente, gestionar publicación/deshabilitación desde Centro de módulos; una segunda instalación devuelve conflicto, no actualiza silenciosamente. Si expira el MFA, iniciar sesión otra vez y retomar desde Centro de módulos. El asistente no conserva archivos tras recargar la página. Esta entrega no necesita nuevas migraciones: requiere 001–005 ya aplicadas.
+
+Para actualizar en otra PC: git pull --ff-only, npm.cmd ci, npm.cmd test y npm.cmd run build; reiniciar la API y actualizar el frontend desplegado. En desarrollo reiniciar ng serve si estaba abierto.
+
+Pendiente para módulos con código nuevo: contrato versionado de artefactos, firmas y repositorio confiable, servicio instalador con identidad separada y permisos acotados, migraciones por módulo y bloqueo de concurrencia, despliegue frontend/API, verificación de salud y recuperación. El asistente actual es el flujo para módulos incluidos; no constituye todavía un instalador de código externo. No cargar paquetes arbitrarios esperando que se ejecuten.
