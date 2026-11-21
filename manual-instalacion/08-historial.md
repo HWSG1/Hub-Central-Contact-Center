@@ -55,3 +55,26 @@ Se corrige el rechazo de identificadores uniqueidentifier no compatibles con la 
 - Flujo de seis pasos para módulos incluidos, descarga del paquete de ejemplo, análisis del servidor, instalación y publicación independientes.
 - Contrato limitado a manifest.json: tamaño acotado, registro estricto, sin extracción ni ejecución de código; análisis auditado y revalidación al instalar. Permisos y MFA se revalidan transaccionalmente.
 - Pruebas de paquetes alterados, tamaño, rutas, autoridad, MFA y auditoría. Sin cambios de esquema. Despliegue de código externo y pruebas de integración con sesión/SQL reales siguen pendientes.
+
+## 20/11/2026 — Presentación del centro de módulos
+Rediseño basado en el mockup: tabla con estados, acciones compactas, detalle desplegable, motivo de cambio contextual y asistente con zona de arrastre ZIP y pasos adaptables. Sin cambios de API, permisos ni SQL.
+
+Ajuste de acciones al mockup: fila compacta de Detalle, configuración, apertura y permisos; disponibilidad en segunda fila alineada a la derecha. Configuración de solo lectura y controles táctiles de 44 px.
+
+Se retiraron las tarjetas informativas superiores y el bloque de ayuda inferior del centro de módulos para priorizar la tabla y sus acciones.
+
+Asistente compacto: encabezado y pasos reducidos, carga y motivo en dos columnas en escritorio y una en móvil, acción de análisis en el pie. Se documentaron los requisitos de desarrollo de módulos y los límites actuales del importador.
+
+Por solicitud del usuario, se retiró el límite de antigüedad de inicio de sesión de 15 minutos exclusivamente en análisis, instalación, publicación y deshabilitación de módulos. Se conservan sesión vigente, MFA de la cuenta, permisos, alcance y auditoría. Sin cambios de SQL. Reiniciar API tras recompilar.
+
+## 20/11/2026 — Buscador de ofertas y calculadoras
+OFERTAS 1.0.0: búsqueda SQL por DNI, IBS o cuenta con varias ofertas por cliente/base; detalle y simuladores Extra, Intra y Corta Cuotas, CSV e impresión. Centro y asistente admiten múltiples módulos. Migración 006 registra un instalador fijo de identidad separada; la tabla ofertas.ofertas_cliente se crea al instalar, no al aplicar 006. Procedimiento sin SQL del ZIP, instalación/auditoría transaccional. Pruebas de servicio y cálculos; parser SQL 2022 correcto. Conexión local no disponible, ejecución SQL real pendiente. No se aplicaron migraciones ni se cargaron datos.
+
+## 2026-11-21 — Contrato de bases TLV
+Migración aditiva 007: tabla base_tlv creada por instalación fija del módulo, 33 columnas del consolidado y nueve opcionales. Actualización de instalaciones existentes sin borrar ofertas. Detalle por matriz, condiciones AOL y >1; consultas conservan múltiples ofertas. Plantilla sin datos y diccionario en business-modules/ofertas. Sin carga ni migración ejecutada contra SQL real.
+
+## 2026-11-21 — Entrega ZIP de OFERTAS
+Archivo ZIP entregable validado contra el importador real. Centro de módulos limitado a instalados; asistente de carga sin selector ni generación de ejemplos. Se documenta explícitamente la dependencia del código integrado y preparación SQL 007.
+
+## 2026-11-21 — Paquetes completos hub-package-v2
+Interfaz y backend provenientes del ZIP firmado, host genérico, ejecutor separado y broker de consultas. Migración 008 prepara una vez el instalador de tablas declarativas. Ofertas TLV independiente conserva columnas y reglas de detalle, usa mod_ofertas_tlv.base_tlv y no altera el módulo anterior. Empaquetador reutilizable y guía 12. SQL real pendiente por conexión local no disponible.

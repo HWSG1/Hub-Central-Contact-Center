@@ -1,0 +1,43 @@
+columna,tipo_sql,origen
+TIPO_BASE,nvarchar(300),Consolidado
+DNI,varchar(40),Consolidado
+CODIGO_CLIENTE,varchar(40),Consolidado
+COD_CLIENTE_CRM,varchar(40),Consolidado
+CUENTA,varchar(40),Consolidado
+NUMERO_ADICIONALES_QUE_APLICA,nvarchar(300),Consolidado
+NOMBRE_TC,nvarchar(300),Consolidado
+METAL,nvarchar(300),Consolidado
+HRE_ACTIVO,nvarchar(300),Consolidado
+ASISTENCIA_VIP_ACTIVO,nvarchar(300),Consolidado
+VAP_ACTIVO,nvarchar(300),Consolidado
+TASA_EXTRA,"decimal(9,4)",Consolidado
+MONTO_OFERTA_EXTRA,"decimal(19,4)",Consolidado
+TASA_INTRA,"decimal(9,4)",Consolidado
+MONTO_OFERTA_INTRA,"decimal(19,4)",Consolidado
+MONTO_OFERTA_CC,"decimal(19,4)",Consolidado
+RANGO_TASA_EXTRA,nvarchar(300),Consolidado
+ID_AREA,nvarchar(300),Consolidado
+MES_BASE,date,Consolidado
+MAIL,nvarchar(300),Consolidado
+LIMITE,"decimal(19,4)",Consolidado
+FLAG_FINAL_PAGO_CONTADO,nvarchar(300),Consolidado
+FLAG_EMPLEADO,nvarchar(300),Consolidado
+ID_ORDEN_CRM,varchar(40),Consolidado
+TIPO_FINANCIAMIENTO,nvarchar(300),Consolidado
+FECHA_COMPRA,date,Consolidado
+PLAZO,int,Consolidado
+CUENTA_DESTINO,varchar(40),Consolidado
+MONTO,"decimal(19,4)",Consolidado
+COMERCIO,nvarchar(300),Consolidado
+NOMBRE_CLIENTE,nvarchar(300),Consolidado
+CATEGORIA,nvarchar(300),Consolidado
+PAGO_IMPUESTO,"decimal(19,4)",Consolidado
+COTIZACION,varchar(40),Matriz de detalle (opcional)
+OFERTA_CRM,varchar(40),Matriz de detalle (opcional)
+FLAG1,nvarchar(300),Matriz de detalle (opcional)
+COLOR_ACTUAL,nvarchar(300),Matriz de detalle (opcional)
+LIMITE_NUEVO_USD,"decimal(19,4)",Matriz de detalle (opcional)
+COLOR_NUEVO,nvarchar(300),Matriz de detalle (opcional)
+DIFERENCIA,"decimal(19,4)",Matriz de detalle (opcional)
+CANTIDAD_TC,int,Matriz de detalle (opcional)
+TC_INGRESADA,varchar(40),Matriz de detalle (opcional)

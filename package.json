@@ -18,7 +18,10 @@
     "admin:remote": "tsx scripts/admin-remote.ts",
     "db:check": "tsx --env-file=.env scripts/check-connection.ts",
     "docs:build": "node scripts/build-install-sql.cjs",
-    "docs:check": "node scripts/build-install-sql.cjs --check"
+    "docs:check": "node scripts/build-install-sql.cjs --check",
+    "modules:publisher": "tsx scripts/module-publisher.ts",
+    "modules:package:offers": "tsx scripts/package-independent-offers.ts",
+    "modules:pack": "tsx scripts/package-module.ts"
   },
   "dependencies": {
     "@angular/common": "22.2.6",

@@ -4,8 +4,8 @@ import { ArrayMaxSize,ArrayUnique,IsArray,IsBoolean,IsInt,IsString,Length,Matche
 import { Permission,type SessionRequest } from '../security/guard.js';
 import { AdminService } from './admin.service.js';
 class ReasonDto {@IsString() @Length(5,500) @Matches(/\S/) reason!:string;}
-class PackageDto extends ReasonDto {@IsString() @MaxLength(10924) archive!:string;}
-class ModuleDto extends ReasonDto {@IsIn(['install','publish','disable']) action!:'install'|'publish'|'disable'; @IsOptional() @IsString() @MaxLength(8192) manifest?:string;}
+class PackageDto extends ReasonDto {@IsString() @MaxLength(2796204) archive!:string;}
+class ModuleDto extends ReasonDto {@IsOptional() @IsString() @Matches(/^[A-Z][A-Z0-9_]{2,39}$/) code?:string; @IsIn(['install','publish','disable']) action!:'install'|'publish'|'disable'; @IsOptional() @IsString() @MaxLength(8192) manifest?:string;}
 class VersionDto extends ReasonDto {@IsInt() @Min(1) version!:number;}
 class RoleDto extends ReasonDto {@IsString() @Length(1,120) @Matches(/\S/) name!:string; @IsString() @MaxLength(500) description!:string; @IsBoolean() enabled!:boolean;}
 class CreateRoleDto extends RoleDto {@IsString() @Matches(/^[A-Z][A-Z0-9_]{2,99}$/) code!:string;}

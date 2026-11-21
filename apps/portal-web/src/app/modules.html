@@ -1,0 +1,30 @@
+<nav class="breadcrumb" aria-label="Ubicación"><a routerLink="/">Inicio</a><span>/</span>Plataforma<span>/</span><strong>Centro de módulos</strong></nav>
+<header class="page-heading"><div><p class="eyebrow">PLATAFORMA</p><h1>Centro de módulos</h1><p class="subtitle">Administra la instalación, el acceso y la publicación de tus herramientas.</p></div>@if(has('CORE.MODULES.MANAGE')){<a class="button primary" routerLink="/modules/import">⊞ Importar módulo (.ZIP)</a>}</header>
+@if(error()){<p role="alert" class="message error-message">{{error()}}</p>}
+@if(notice()){<p role="status" class="message success">{{notice()}}</p>}
+@if(loading()){<p role="status" class="panel">Consultando módulos…</p>}
+@if(available().length){
+<section class="module-list" aria-label="Módulos instalados"><div class="list-heading"><h2>Módulos instalados <span class="count">{{available().length}}</span></h2><span class="subtle">SQL Server · Versión del Hub</span></div>
+<div class="table-scroll"><table><thead><tr><th>Módulo / código</th><th>Integración</th><th>Versión</th><th>Instalación / publicación</th><th class="actions-heading">Acciones</th></tr></thead><tbody>@for(module of available();track module.id){<tr>
+<td><div class="module-name"><span class="icon red" aria-hidden="true">▦</span><div><strong>{{module.name}}</strong><small>{{module.id}}</small></div></div></td>
+<td><span class="badge neutral">{{module.format==='hub-package-v2'?'Paquete instalado':'Módulo incluido'}}</span></td><td>{{module.version}}</td>
+<td><div class="status-stack">@if(installed(module.id)){<span class="badge green">Instalado</span><span class="badge" [class.green]="installed(module.id)!.state==='PUBLISHED'" [class.amber]="installed(module.id)!.state!=='PUBLISHED'">{{stateName(installed(module.id)!.state)}}</span>}@else{<span class="badge amber">Disponible para instalar</span><span class="badge neutral">Sin publicar</span>}</div></td>
+<td class="actions-cell"><div class="module-actions"><div class="action-tools" role="group" aria-label="Acciones del módulo">
+<button class="detail-action" (click)="inspect(module,'detail')" [attr.aria-expanded]="selected()?.id===module.id&&details()" aria-controls="module-detail">Detalle</button>
+<button class="icon-action" (click)="inspect(module,'configuration')" [attr.aria-expanded]="selected()?.id===module.id&&configuration()" aria-controls="module-configuration" aria-label="Ver configuración del módulo" title="Configuración del módulo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+@if(installed(module.id)&&installed(module.id)!.enabled&&has(module.permission)){<a class="button icon-action" [routerLink]="module.route" [attr.aria-label]="'Abrir '+module.name" title="Abrir módulo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></a>}
+@if(has('CORE.ROLES.READ')){<a class="button icon-action" routerLink="/admin/roles" aria-label="Consultar roles y permisos del módulo" title="Roles y permisos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg></a>}
+</div>
+@if(has('CORE.MODULES.MANAGE')){<div class="availability-action">@if(installed(module.id)){<button [disabled]="busy()" (click)="availability(module)" [class.disable-action]="installed(module.id)!.enabled">{{installed(module.id)!.enabled?'Deshabilitar':'Publicar'}}</button>}@else{<a class="button" routerLink="/modules/import">Instalar</a>}</div>}
+</div></td>
+</tr>}</tbody></table></div></section>
+@if(selected();as module){
+@if(details()){<section id="module-detail" class="panel detail-panel"><div class="section-heading"><div><p class="eyebrow">DETALLE DEL MÓDULO</p><h2>{{module.name}}</h2></div><button (click)="details.set(false)" aria-label="Cerrar detalle">✕</button></div><p>{{module.description}}</p><dl><div><dt>Permiso de uso</dt><dd><code>{{module.permission}}</code></dd></div><div><dt>Disponibilidad</dt><dd>{{installed(module.id)?stateName(installed(module.id)!.state):'Pendiente de instalación'}}</dd></div></dl><p class="subtle">Las reglas de los simuladores deben validarse antes de su uso operativo.</p></section>}
+@if(configuration()){<section id="module-configuration" class="panel detail-panel"><div class="section-heading"><div><p class="eyebrow">CONFIGURACIÓN DEL MÓDULO</p><h2>{{module.name}}</h2></div><button (click)="configuration.set(false)" aria-label="Cerrar configuración">✕</button></div><dl><div><dt>Versión integrada</dt><dd>{{module.version}}</dd></div><div><dt>Ruta de acceso</dt><dd><code>{{module.route}}</code></dd></div><div><dt>Permiso requerido</dt><dd><code>{{module.permission}}</code></dd></div></dl><p class="subtle">{{module.id==='OFERTAS'?'La instalación crea ofertas.base_tlv vacía. Después puedes cargar varias ofertas por cliente y base.':'Este módulo no requiere parámetros de instalación.'}}</p></section>}
+@if(pending();as action){<section class="panel" aria-labelledby="change-title"><p class="eyebrow">CAMBIO DE DISPONIBILIDAD</p><h2 id="change-title">{{action==='disable'?'Deshabilitar':'Publicar'}} {{module.name}}</h2><p>{{action==='disable'?'Los usuarios dejarán de tener acceso a esta herramienta.':'La herramienta estará disponible para los usuarios con permiso de uso.'}}</p><label for="change-reason">Motivo del cambio<textarea id="change-reason" [(ngModel)]="reason" maxlength="500" rows="2" placeholder="Describe el motivo de esta operación"></textarea></label><div class="action-footer"><p class="subtle">El cambio quedará registrado en la auditoría.</p><div class="row-actions"><button (click)="pending.set(null)" [disabled]="busy()">Cancelar</button><button class="primary" (click)="change(action)" [disabled]="busy()||!validReason()">{{busy()?'Guardando…':'Confirmar cambio'}}</button></div></div></section>}
+
+}
+
+}
+
+@if(!loading()&&!error()&&!available().length){<section class="panel"><h2>No hay módulos instalados</h2><p>Importa el archivo ZIP entregado para comenzar la instalación.</p></section>}

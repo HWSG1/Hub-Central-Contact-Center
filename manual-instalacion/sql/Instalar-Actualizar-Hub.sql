@@ -25,9 +25,12 @@ INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c
 (N''002_local_mfa.sql'',N''c9be5a90540e9485a98ff7c0a175dcfc9780b564e8e3e077a94b3822afd97137''),
 (N''003_security_administration.sql'',N''b47946a7a1243a9daa49f792d0ce6045b3a110b31bd571329a0f3a783e3ca17c''),
 (N''004_user_enrollment.sql'',N''56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c''),
-(N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3'');
+(N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3''),
+(N''006_offers_installer.sql'',N''0fef9559a49898f5eea85c2658640064efe157ef11da7c429af2bfed473c6641''),
+(N''007_offers_tlv.sql'',N''8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac''),
+(N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
-IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
+IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''ofertas'') AND name IN(N''ofertas_cliente'',N''base_tlv'') AND OBJECT_ID(N''core.install_ofertas_v1'',N''P'') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N''mod[_]%'' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N''hub_package_owner'')) AND OBJECT_ID(N''core.create_package_storage'',N''P'') IS NOT NULL) OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
 IF SCHEMA_ID(N''core'') IS NOT NULL AND OBJECT_ID(N''dbo.hub_migrations'',N''U'') IS NULL
  THROW 51711,''Existe core sin historial de migraciones. Revisar con el DBA.'',1;
@@ -169,6 +172,293 @@ GRANT INSERT ON core.application_catalog TO hub_runtime;
 GRANT UPDATE(published) ON core.application_catalog TO hub_runtime;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3'');
+ END;
+
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''006_offers_installer.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''SET XACT_ABORT ON;
+-- A dedicated database principal can create objects only in the offers schema.
+-- The web identity gets EXECUTE on the fixed installer, never CREATE TABLE.
+CREATE USER hub_offers_installer WITHOUT LOGIN;
+'';
+EXEC sys.sp_executesql N''
+CREATE SCHEMA ofertas AUTHORIZATION hub_offers_installer;
+'';
+EXEC sys.sp_executesql N''
+GRANT CREATE TABLE TO hub_offers_installer;
+GRANT SELECT ON SCHEMA::ofertas TO hub_runtime;
+INSERT core.permissions(code) VALUES(''''OFERTAS.USE'''');
+INSERT core.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM core.roles r CROSS JOIN core.permissions p
+WHERE r.code=''''PLATFORM_ADMIN'''' AND p.code=''''OFERTAS.USE'''';
+'';
+EXEC sys.sp_executesql N''
+CREATE PROCEDURE core.install_ofertas_v1
+WITH EXECUTE AS ''''hub_offers_installer''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ -- Called within the same transaction as module registration and its audit.
+ IF @@TRANCOUNT=0 THROW 51800,''''La instalacion requiere una transaccion.'''',1;
+ IF OBJECT_ID(N''''ofertas.ofertas_cliente'''') IS NOT NULL
+  THROW 51801,''''La tabla de ofertas ya existe. No se modifica ni reemplaza.'''',1;
+ CREATE TABLE ofertas.ofertas_cliente(
+  id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_ofertas_cliente PRIMARY KEY,
+  base_origen nvarchar(120) NOT NULL,
+  producto varchar(20) NOT NULL,
+  codigo_oferta nvarchar(100) NULL,
+  lote nvarchar(100) NULL,
+  dni varchar(32) NULL,
+  codigo_cliente varchar(32) NULL,
+  cuenta varchar(32) NULL,
+  nombre_cliente nvarchar(200) NOT NULL,
+  agencia nvarchar(150) NULL,
+  telefono1 nvarchar(30) NULL,
+  telefono2 nvarchar(30) NULL,
+  telefono3 nvarchar(30) NULL,
+  direccion nvarchar(500) NULL,
+  monto_oferta decimal(18,2) NULL,
+  tasa_anual decimal(7,4) NULL,
+  tasa_minima decimal(7,4) NULL,
+  tasa_maxima decimal(7,4) NULL,
+  oferta nvarchar(2000) NOT NULL,
+  tipo_tarjeta nvarchar(100) NULL,
+  limite_usd decimal(18,2) NULL,
+  limite_lps decimal(18,2) NULL,
+  limite_actual decimal(18,2) NULL,
+  nuevo_limite decimal(18,2) NULL,
+  vigente_desde date NULL,
+  vigente_hasta date NULL,
+  activo bit NOT NULL CONSTRAINT DF_ofertas_activo DEFAULT 1,
+  cargado_en datetime2 NOT NULL CONSTRAINT DF_ofertas_cargado DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT CK_ofertas_producto CHECK(producto IN(''''PREAPROBADAS'''',''''TC_TITULAR'''',''''AUMENTO_LIMITE'''',''''EXTRA'''',''''INTRA'''',''''CORTA_CUOTAS'''')),
+  CONSTRAINT CK_ofertas_identidad CHECK(NULLIF(LTRIM(RTRIM(dni)),'''''''') IS NOT NULL OR NULLIF(LTRIM(RTRIM(codigo_cliente)),'''''''') IS NOT NULL OR NULLIF(LTRIM(RTRIM(cuenta)),'''''''') IS NOT NULL),
+  CONSTRAINT CK_ofertas_nombre CHECK(LEN(LTRIM(RTRIM(nombre_cliente)))>0 AND LEN(LTRIM(RTRIM(base_origen)))>0 AND LEN(LTRIM(RTRIM(oferta)))>0),
+  CONSTRAINT CK_ofertas_montos CHECK((monto_oferta IS NULL OR monto_oferta>=0) AND (limite_usd IS NULL OR limite_usd>=0) AND (limite_lps IS NULL OR limite_lps>=0) AND (limite_actual IS NULL OR limite_actual>=0) AND (nuevo_limite IS NULL OR nuevo_limite>=0)),
+  CONSTRAINT CK_ofertas_tasas CHECK((tasa_anual IS NULL OR tasa_anual BETWEEN 0 AND 100) AND (tasa_minima IS NULL OR tasa_minima BETWEEN 0 AND 100) AND (tasa_maxima IS NULL OR tasa_maxima BETWEEN 0 AND 100) AND (tasa_minima IS NULL OR tasa_maxima IS NULL OR tasa_minima<=tasa_maxima)),
+  CONSTRAINT CK_ofertas_vigencia CHECK(vigente_desde IS NULL OR vigente_hasta IS NULL OR vigente_desde<=vigente_hasta)
+ );
+ -- Deliberately non-unique: a customer/account can have many offers in any base.
+ CREATE INDEX IX_ofertas_dni ON ofertas.ofertas_cliente(dni,activo,id);
+ CREATE INDEX IX_ofertas_cliente ON ofertas.ofertas_cliente(codigo_cliente,activo,id);
+ CREATE INDEX IX_ofertas_cuenta ON ofertas.ofertas_cliente(cuenta,activo,id);
+END;
+'';
+EXEC sys.sp_executesql N''
+GRANT EXECUTE ON core.install_ofertas_v1 TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''006_offers_installer.sql'',N''0fef9559a49898f5eea85c2658640064efe157ef11da7c429af2bfed473c6641'');
+ END;
+
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''007_offers_tlv.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''-- Additive TLV contract. Prior migrations and existing offers remain unchanged.
+CREATE PROCEDURE core.install_ofertas_tlv_v1
+WITH EXECUTE AS ''''hub_offers_installer''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ IF @@TRANCOUNT=0 THROW 51800,''''La instalacion requiere una transaccion.'''',1;
+ IF OBJECT_ID(N''''ofertas.base_tlv'''') IS NOT NULL
+  THROW 51801,''''La tabla TLV ya existe. No se modifica ni reemplaza.'''',1;
+ CREATE TABLE ofertas.base_tlv(
+  id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_base_tlv PRIMARY KEY,
+  [TIPO_BASE] nvarchar(300) NULL,
+  [DNI] varchar(40) NULL,
+  [CODIGO_CLIENTE] varchar(40) NULL,
+  [COD_CLIENTE_CRM] varchar(40) NULL,
+  [CUENTA] varchar(40) NULL,
+  [NUMERO_ADICIONALES_QUE_APLICA] nvarchar(300) NULL,
+  [NOMBRE_TC] nvarchar(300) NULL,
+  [METAL] nvarchar(300) NULL,
+  [HRE_ACTIVO] nvarchar(300) NULL,
+  [ASISTENCIA_VIP_ACTIVO] nvarchar(300) NULL,
+  [VAP_ACTIVO] nvarchar(300) NULL,
+  [TASA_EXTRA] decimal(9,4) NULL,
+  [MONTO_OFERTA_EXTRA] decimal(19,4) NULL,
+  [TASA_INTRA] decimal(9,4) NULL,
+  [MONTO_OFERTA_INTRA] decimal(19,4) NULL,
+  [MONTO_OFERTA_CC] decimal(19,4) NULL,
+  [RANGO_TASA_EXTRA] nvarchar(300) NULL,
+  [ID_AREA] nvarchar(300) NULL,
+  [MES_BASE] date NULL,
+  [MAIL] nvarchar(300) NULL,
+  [LIMITE] decimal(19,4) NULL,
+  [FLAG_FINAL_PAGO_CONTADO] nvarchar(300) NULL,
+  [FLAG_EMPLEADO] nvarchar(300) NULL,
+  [ID_ORDEN_CRM] varchar(40) NULL,
+  [TIPO_FINANCIAMIENTO] nvarchar(300) NULL,
+  [FECHA_COMPRA] date NULL,
+  [PLAZO] int NULL,
+  [CUENTA_DESTINO] varchar(40) NULL,
+  [MONTO] decimal(19,4) NULL,
+  [COMERCIO] nvarchar(300) NULL,
+  [NOMBRE_CLIENTE] nvarchar(300) NULL,
+  [CATEGORIA] nvarchar(300) NULL,
+  [PAGO_IMPUESTO] decimal(19,4) NULL,
+  [COTIZACION] varchar(40) NULL,
+  [OFERTA_CRM] varchar(40) NULL,
+  [FLAG1] nvarchar(300) NULL,
+  [COLOR_ACTUAL] nvarchar(300) NULL,
+  [LIMITE_NUEVO_USD] decimal(19,4) NULL,
+  [COLOR_NUEVO] nvarchar(300) NULL,
+  [DIFERENCIA] decimal(19,4) NULL,
+  [CANTIDAD_TC] int NULL,
+  [TC_INGRESADA] varchar(40) NULL,
+  activo bit NOT NULL CONSTRAINT DF_base_tlv_activo DEFAULT 1,
+  cargado_en datetime2 NOT NULL CONSTRAINT DF_base_tlv_cargado DEFAULT SYSUTCDATETIME()
+ );
+ CREATE INDEX IX_base_tlv_dni ON ofertas.base_tlv(DNI,activo,id);
+ CREATE INDEX IX_base_tlv_cliente ON ofertas.base_tlv(CODIGO_CLIENTE,activo,id);
+ CREATE INDEX IX_base_tlv_cuenta ON ofertas.base_tlv(CUENTA,activo,id);
+END;
+'';
+EXEC sys.sp_executesql N''
+GRANT EXECUTE ON core.install_ofertas_tlv_v1 TO hub_runtime;
+'';
+EXEC sys.sp_executesql N''
+ALTER PROCEDURE core.install_ofertas_v1
+WITH EXECUTE AS ''''hub_offers_installer''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ -- Called within the same transaction as module registration and its audit.
+ IF @@TRANCOUNT=0 THROW 51800,''''La instalacion requiere una transaccion.'''',1;
+ IF OBJECT_ID(N''''ofertas.ofertas_cliente'''') IS NOT NULL
+  THROW 51801,''''La tabla de ofertas ya existe. No se modifica ni reemplaza.'''',1;
+ CREATE TABLE ofertas.ofertas_cliente(
+  id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_ofertas_cliente PRIMARY KEY,
+  base_origen nvarchar(120) NOT NULL,
+  producto varchar(20) NOT NULL,
+  codigo_oferta nvarchar(100) NULL,
+  lote nvarchar(100) NULL,
+  dni varchar(32) NULL,
+  codigo_cliente varchar(32) NULL,
+  cuenta varchar(32) NULL,
+  nombre_cliente nvarchar(200) NOT NULL,
+  agencia nvarchar(150) NULL,
+  telefono1 nvarchar(30) NULL,
+  telefono2 nvarchar(30) NULL,
+  telefono3 nvarchar(30) NULL,
+  direccion nvarchar(500) NULL,
+  monto_oferta decimal(18,2) NULL,
+  tasa_anual decimal(7,4) NULL,
+  tasa_minima decimal(7,4) NULL,
+  tasa_maxima decimal(7,4) NULL,
+  oferta nvarchar(2000) NOT NULL,
+  tipo_tarjeta nvarchar(100) NULL,
+  limite_usd decimal(18,2) NULL,
+  limite_lps decimal(18,2) NULL,
+  limite_actual decimal(18,2) NULL,
+  nuevo_limite decimal(18,2) NULL,
+  vigente_desde date NULL,
+  vigente_hasta date NULL,
+  activo bit NOT NULL CONSTRAINT DF_ofertas_activo DEFAULT 1,
+  cargado_en datetime2 NOT NULL CONSTRAINT DF_ofertas_cargado DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT CK_ofertas_producto CHECK(producto IN(''''PREAPROBADAS'''',''''TC_TITULAR'''',''''AUMENTO_LIMITE'''',''''EXTRA'''',''''INTRA'''',''''CORTA_CUOTAS'''')),
+  CONSTRAINT CK_ofertas_identidad CHECK(NULLIF(LTRIM(RTRIM(dni)),'''''''') IS NOT NULL OR NULLIF(LTRIM(RTRIM(codigo_cliente)),'''''''') IS NOT NULL OR NULLIF(LTRIM(RTRIM(cuenta)),'''''''') IS NOT NULL),
+  CONSTRAINT CK_ofertas_nombre CHECK(LEN(LTRIM(RTRIM(nombre_cliente)))>0 AND LEN(LTRIM(RTRIM(base_origen)))>0 AND LEN(LTRIM(RTRIM(oferta)))>0),
+  CONSTRAINT CK_ofertas_montos CHECK((monto_oferta IS NULL OR monto_oferta>=0) AND (limite_usd IS NULL OR limite_usd>=0) AND (limite_lps IS NULL OR limite_lps>=0) AND (limite_actual IS NULL OR limite_actual>=0) AND (nuevo_limite IS NULL OR nuevo_limite>=0)),
+  CONSTRAINT CK_ofertas_tasas CHECK((tasa_anual IS NULL OR tasa_anual BETWEEN 0 AND 100) AND (tasa_minima IS NULL OR tasa_minima BETWEEN 0 AND 100) AND (tasa_maxima IS NULL OR tasa_maxima BETWEEN 0 AND 100) AND (tasa_minima IS NULL OR tasa_maxima IS NULL OR tasa_minima<=tasa_maxima)),
+  CONSTRAINT CK_ofertas_vigencia CHECK(vigente_desde IS NULL OR vigente_hasta IS NULL OR vigente_desde<=vigente_hasta)
+ );
+ -- Deliberately non-unique: a customer/account can have many offers in any base.
+ CREATE INDEX IX_ofertas_dni ON ofertas.ofertas_cliente(dni,activo,id);
+ CREATE INDEX IX_ofertas_cliente ON ofertas.ofertas_cliente(codigo_cliente,activo,id);
+ CREATE INDEX IX_ofertas_cuenta ON ofertas.ofertas_cliente(cuenta,activo,id);
+ EXEC core.install_ofertas_tlv_v1;
+END;
+'';
+EXEC sys.sp_executesql N''
+-- Existing installations receive the new empty table during the Hub update.
+-- Fresh installations defer its creation to the module installation transaction.
+IF EXISTS(SELECT 1 FROM core.modules WHERE code=''''OFERTAS'''')
+ EXEC core.install_ofertas_tlv_v1;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''007_offers_tlv.sql'',N''8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac'');
+ END;
+
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''008_independent_modules.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''CREATE USER hub_package_owner WITHOUT LOGIN;
+GRANT CREATE SCHEMA,CREATE TABLE TO hub_package_owner;
+CREATE TABLE core.module_packages(version_id uniqueidentifier PRIMARY KEY REFERENCES core.module_versions(id),archive varbinary(max) NOT NULL);
+GRANT INSERT ON core.module_packages TO hub_runtime;
+'';
+EXEC sys.sp_executesql N''
+CREATE PROCEDURE core.create_package_storage @code varchar(40),@definition nvarchar(max)
+WITH EXECUTE AS ''''hub_package_owner''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ IF @@TRANCOUNT=0 THROW 51900,''''Se requiere transaccion.'''',1;
+ IF @code IS NULL OR LEN(@code)<3 OR @code COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Z0-9_]%'''' OR LEFT(@code,1) COLLATE Latin1_General_100_BIN2 NOT LIKE ''''[A-Z]''''
+  THROW 51901,''''Codigo no valido.'''',1;
+ IF ISJSON(@definition)<>1 OR LEN(@definition)>100000 THROW 51902,''''Definicion no valida.'''',1;
+ DECLARE @schema sysname=N''''mod_''''+LOWER(@code),@ddl nvarchar(max),@table sysname,@columns nvarchar(max),@indexes nvarchar(max),@name sysname,@type nvarchar(50),@nullable bit;
+ IF SCHEMA_ID(@schema) IS NOT NULL THROW 51903,''''El esquema ya existe. No se reemplaza.'''',1;
+ SET @ddl=N''''CREATE SCHEMA ''''+QUOTENAME(@schema)+N'''' AUTHORIZATION hub_package_owner;'''';
+ EXEC sys.sp_executesql @ddl;
+ IF (SELECT COUNT(*) FROM OPENJSON(@definition,''''$.tables'''')) NOT BETWEEN 1 AND 10 THROW 51902,''''Tablas no validas.'''',1;
+ DECLARE tables_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT name,columns, indexes FROM OPENJSON(@definition,''''$.tables'''') WITH(name nvarchar(48),columns nvarchar(max) AS JSON,indexes nvarchar(max) AS JSON);
+ OPEN tables_cursor;FETCH NEXT FROM tables_cursor INTO @table,@columns,@indexes;
+ WHILE @@FETCH_STATUS=0
+ BEGIN
+  IF @table IS NULL OR LEN(@table)=0 OR @table COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Za-z0-9_]%'''' OR LEFT(@table,1) COLLATE Latin1_General_100_BIN2 NOT LIKE ''''[A-Za-z]'''' THROW 51904,''''Tabla no valida.'''',1;
+  IF (SELECT COUNT(*) FROM OPENJSON(@columns)) NOT BETWEEN 1 AND 100 THROW 51904,''''Columnas no validas.'''',1;
+  SET @ddl=N''''CREATE TABLE ''''+QUOTENAME(@schema)+N''''.''''+QUOTENAME(@table)+N''''([id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,[activo] bit NOT NULL DEFAULT 1,[cargado_en] datetime2 NOT NULL DEFAULT SYSUTCDATETIME()'''';
+  DECLARE columns_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT name,type,nullable FROM OPENJSON(@columns) WITH(name nvarchar(48),type nvarchar(50),nullable bit);
+  OPEN columns_cursor;FETCH NEXT FROM columns_cursor INTO @name,@type,@nullable;
+  WHILE @@FETCH_STATUS=0
+  BEGIN
+   IF @name IS NULL OR LEN(@name)=0 OR @name COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Za-z0-9_]%'''' OR LEFT(@name,1) COLLATE Latin1_General_100_BIN2 NOT LIKE ''''[A-Za-z]'''' OR LOWER(@name) IN(''''id'''',''''activo'''',''''cargado_en'''') THROW 51905,''''Columna no valida.'''',1;
+   IF @nullable IS NULL OR @type IS NULL OR @type COLLATE Latin1_General_100_BIN2 NOT IN(''''varchar(40)'''',''''nvarchar(300)'''',''''nvarchar(2000)'''',''''decimal(19,4)'''',''''decimal(9,4)'''',''''int'''',''''bigint'''',''''date'''',''''bit'''') THROW 51906,''''Tipo no valido.'''',1;
+   SET @ddl+=N'''',''''+QUOTENAME(@name)+N'''' ''''+@type+CASE WHEN @nullable=1 THEN N'''' NULL'''' ELSE N'''' NOT NULL'''' END;
+   FETCH NEXT FROM columns_cursor INTO @name,@type,@nullable;
+  END;
+  CLOSE columns_cursor;DEALLOCATE columns_cursor;
+  SET @ddl+=N'''');'''';EXEC sys.sp_executesql @ddl;
+  DECLARE @index nvarchar(max),@indexFields nvarchar(max),@counter int=0;
+  IF (SELECT COUNT(*) FROM OPENJSON(@indexes))>5 THROW 51907,''''Demasiados indices.'''',1;
+  DECLARE indexes_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT value FROM OPENJSON(@indexes);
+  OPEN indexes_cursor;FETCH NEXT FROM indexes_cursor INTO @index;
+  WHILE @@FETCH_STATUS=0
+  BEGIN
+   IF (SELECT COUNT(*) FROM OPENJSON(@index)) NOT BETWEEN 1 AND 4 OR EXISTS(SELECT 1 FROM OPENJSON(@index) WHERE LEN(value)>48 OR value COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Za-z0-9_]%'''' OR LEN(value)=0) THROW 51907,''''Indice no valido.'''',1;
+   SELECT @indexFields=STRING_AGG(CONVERT(nvarchar(max),QUOTENAME(value)),N'''','''') WITHIN GROUP(ORDER BY CONVERT(int,[key])) FROM OPENJSON(@index);
+   SET @counter+=1;
+   SET @ddl=N''''CREATE INDEX ''''+QUOTENAME(N''''ix_''''+CONVERT(nvarchar(10),@counter))+N'''' ON ''''+QUOTENAME(@schema)+N''''.''''+QUOTENAME(@table)+N''''(''''+@indexFields+N'''');'''';EXEC sys.sp_executesql @ddl;
+   FETCH NEXT FROM indexes_cursor INTO @index;
+  END;
+  CLOSE indexes_cursor;DEALLOCATE indexes_cursor;
+  FETCH NEXT FROM tables_cursor INTO @table,@columns,@indexes;
+ END;
+ CLOSE tables_cursor;DEALLOCATE tables_cursor;
+ SET @ddl=N''''GRANT SELECT ON SCHEMA::''''+QUOTENAME(@schema)+N'''' TO hub_runtime;'''';EXEC sys.sp_executesql @ddl;
+END;
+'';
+EXEC sys.sp_executesql N''
+CREATE PROCEDURE core.register_package_permission @code varchar(40)
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+ SET NOCOUNT ON;
+ IF @@TRANCOUNT=0 OR @code IS NULL OR @code COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Z0-9_]%'''' OR @code LIKE ''''CORE%'''' OR NOT EXISTS(SELECT 1 FROM core.modules WHERE code=@code) THROW 51908,''''Modulo no valido.'''',1;
+ DECLARE @permission varchar(150)=@code+''''.USE'''';
+ IF EXISTS(SELECT 1 FROM core.permissions WHERE code=@permission) THROW 51908,''''Permiso existente.'''',1;
+ INSERT core.permissions(code) VALUES(@permission);
+ INSERT core.role_permissions(role_id,permission_id) SELECT r.id,p.id FROM core.roles r CROSS JOIN core.permissions p WHERE r.code=''''PLATFORM_ADMIN'''' AND p.code=@permission;
+END;
+'';
+EXEC sys.sp_executesql N''
+GRANT EXECUTE ON core.create_package_storage TO hub_runtime;
+GRANT EXECUTE ON core.register_package_permission TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;

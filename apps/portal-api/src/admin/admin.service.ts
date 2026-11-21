@@ -1,6 +1,8 @@
+import {executeBackend} from '../modules/runner.js';
+import {inspectFullPackage} from '../modules/archive.js';
 import { inspectPackage } from '../business/package.js';
 import { config } from '../config.js';
-import { builtin,builtinHash,descriptor,validateDescriptor } from '../business/registry.js';
+import { builtin,descriptor,descriptors,moduleDescriptor,validateDescriptor } from '../business/registry.js';
 import { BadRequestException } from '@nestjs/common';
 import { opaque,digest } from '../security/policy.js';
 import { newMfaSecret,seal } from '../security/local-mfa.js';
@@ -17,29 +19,54 @@ export interface RoleInput {code?:string;name:string;description:string;enabled:
 export class AdminService {
  constructor(private db:Database){}
  async package(req:SessionRequest,input:{archive:string;reason:string},install=false){
-  let report;try{report=inspectPackage(input.archive);}catch{throw new BadRequestException('Paquete rechazado: usa el ZIP de módulo incluido, con manifest.json sin archivos adicionales (máximo 8 KB). Los paquetes con código nuevo requieren un instalador todavía no disponible.');}
+  let report;try{report=inspectPackage(input.archive);}catch{return this.fullPackage(req,input,install);}
   if(install)return this.manageModule(req,{action:'install',manifest:JSON.stringify(report.manifest),reason:input.reason});
   await this.mutate(req,'CORE.MODULES.MANAGE','MODULE.ANALYZE','module',randomUUID(),input.reason,async()=>({before:null,after:{sha256:report.sha256,code:report.manifest.id,version:report.manifest.version}}));
   return report;
  }
+ async fullPackage(req:SessionRequest,input:{archive:string;reason:string},install:boolean){
+  let pkg;try{pkg=inspectFullPackage(input.archive);}catch(error){throw new BadRequestException('Paquete rechazado: '+(error instanceof Error?error.message:'Formato inválido.'));}
+  const manifest=pkg.manifest,id=randomUUID();
+  try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
+   const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
+   if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
+   if((await q('SELECT id FROM core.modules WHERE code=@code',{code:manifest.id})).recordset.length)throw new ConflictException('Este módulo ya está instalado. La primera versión del instalador no reemplaza módulos existentes.');
+   const health=await executeBackend(pkg.files['backend/main.mjs'],'health',{},async()=>{throw Error('La comprobación inicial no accede a SQL.');});if(!health||typeof health!=='object'||(health as {ok?:boolean}).ok!==true)throw new ConflictException('La comprobación inicial del backend no fue satisfactoria.');
+   if(install){
+    await q('EXEC core.create_package_storage @code=@code,@definition=@definition;',{code:manifest.id,definition:JSON.stringify(pkg.migration)});
+    await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
+    await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
+    const version=randomUUID(),installation=randomUUID();
+    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:version,module:id,version:manifest.version,manifest:JSON.stringify(manifest),hash:pkg.sha256});
+    await q('INSERT core.module_packages(version_id,archive) VALUES(@version,@archive)',{version,archive:pkg.bytes});
+    await q("INSERT core.module_installations(id,version_id,requested_by,state) VALUES(@id,@version,@actor,'VALIDATED')",{id:installation,version,actor:req.user.id});
+    await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:manifest.name,description:manifest.description,route:manifest.route,permission:manifest.permission});
+   }
+   return {before:null,after:{code:manifest.id,version:manifest.version,sha256:pkg.sha256,publisher:manifest.publisher,schema:'mod_'+manifest.id.toLowerCase(),state:install?'VALIDATED':'ANALYZED'}};
+  });
+  }catch(error){await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,'FAILURE',@correlation,'module',@id,@details)",{actor:req.user.id,action:install?'MODULE.INSTALL':'MODULE.ANALYZE',correlation:req.correlation,id,details:JSON.stringify({code:manifest.id,version:manifest.version,sha256:pkg.sha256})}).catch(()=>{});throw error;}
+  return install?{ok:true,id}:{manifest,sha256:pkg.sha256,size:pkg.size,files:Object.keys(pkg.files),schema:'mod_'+manifest.id.toLowerCase(),tables:pkg.migration.tables.map(t=>t.name)};
+ }
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
-  const installed=(await this.db.query(`SELECT m.id,m.code,m.name,m.enabled,v.version,i.state,i.id AS installation_id FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code ORDER BY i.created_at DESC`,{code:builtin.id})).recordset;
-  return {available:descriptor,installed};
+  const installed=(await this.db.query(`SELECT m.id,m.code,m.name,m.enabled,v.version,v.manifest,i.state,i.id AS installation_id FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id ORDER BY i.created_at DESC`)).recordset;
+  const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'?[m]:[];}catch{return [];}});
+  return {available:descriptor,modules:[...descriptors,...packages],installed};
  }
- async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;reason:string}){
-  if(input.action==='install'){try{validateDescriptor(JSON.parse(input.manifest??''));}catch{throw new BadRequestException('El manifiesto no corresponde a un módulo incluido en esta versión del Hub.');}}
+ async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;code?:string;reason:string}){
+  let selected;try{selected=input.action==='install'?validateDescriptor(JSON.parse(input.manifest??'')):moduleDescriptor(input.code??builtin.id);}catch{if(input.action==='install')throw new BadRequestException('Usa el ZIP firmado para instalar.');const row=(await this.db.query<{manifest:string}>('SELECT v.manifest FROM core.module_versions v JOIN core.modules m ON m.id=v.module_id JOIN core.module_packages p ON p.version_id=v.id WHERE m.code=@code',{code:input.code})).recordset[0];if(!row)throw new BadRequestException('Módulo desconocido.');selected=JSON.parse(row.manifest);}
   const id=randomUUID();
   return this.mutate(req,'CORE.MODULES.MANAGE','MODULE.'+input.action.toUpperCase(),'module',id,input.reason,async(q)=>{
-   const current=(await q<{id:string;installation_id:string;state:string}>(`SELECT m.id,i.id AS installation_id,i.state FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code AND v.version=@version`,{code:builtin.id,version:builtin.version})).recordset[0];
+   const current=(await q<{id:string;installation_id:string;state:string}>(`SELECT m.id,i.id AS installation_id,i.state FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code AND v.version=@version`,{code:selected.id,version:selected.version})).recordset[0];
    if(input.action==='install'){
-    if(current||(await q('SELECT id FROM core.modules WHERE code=@code',{code:builtin.id})).recordset.length)throw new ConflictException('El módulo ya está instalado. Recarga la lista.');
+    if(current||(await q('SELECT id FROM core.modules WHERE code=@code',{code:selected.id})).recordset.length)throw new ConflictException('El módulo ya está instalado. Recarga la lista.');
+    if(selected.id==='OFERTAS'){try{await q("IF OBJECT_ID(N'core.install_ofertas_tlv_v1',N'P') IS NULL THROW 51802,'Falta instalador TLV.',1; EXEC core.install_ofertas_v1;");}catch(error){const number=(error as {number?:number}).number;if(number===2812||number===51802)throw new ConflictException('Falta preparar el instalador de ofertas: aplica la actualización SQL 007 mediante el SQL consolidado del Hub.');if(number===51801)throw new ConflictException('La tabla de ofertas ya existe. La instalación no la reemplaza; revisa el estado del módulo.');throw error;}}
     const versionId=randomUUID(),installationId=randomUUID();
-    await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:builtin.id,name:builtin.name});
-    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:id,version:builtin.version,manifest:JSON.stringify(descriptor),hash:builtinHash});
+    await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:selected.id,name:selected.name});
+    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:id,version:selected.version,manifest:JSON.stringify(selected),hash:selected.descriptorSha256});
     await q("INSERT core.module_installations(id,version_id,requested_by,state) VALUES(@id,@version,@actor,'VALIDATED')",{id:installationId,version:versionId,actor:req.user.id});
-    await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:builtin.name,description:builtin.description,route:builtin.route,permission:builtin.permission});
-    return {before:null,after:{moduleId:id,code:builtin.id,version:builtin.version,state:'VALIDATED',source:'builtin'}};
+    await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:selected.name,description:selected.description,route:selected.route,permission:selected.permission});
+    return {before:null,after:{moduleId:id,code:selected.id,version:selected.version,state:'VALIDATED',source:'builtin'}};
    }
    if(!current)throw new NotFoundException('Primero importa el manifiesto del módulo.');
    const enabled=input.action==='publish';
@@ -47,7 +74,7 @@ export class AdminService {
    await q('UPDATE core.modules SET enabled=@enabled WHERE id=@id',{enabled,id:current.id});
    await q('UPDATE core.application_catalog SET published=@enabled WHERE module_id=@id',{enabled,id:current.id});
    await q('UPDATE core.module_installations SET state=@state WHERE id=@id',{state:enabled?'PUBLISHED':'DISABLED',id:current.installation_id});
-   return {resourceId:current.id,before:current,after:{moduleId:current.id,code:builtin.id,state:enabled?'PUBLISHED':'DISABLED'}};
+   return {resourceId:current.id,before:current,after:{moduleId:current.id,code:selected.id,state:enabled?'PUBLISHED':'DISABLED'}};
   });
  }
  private async snapshot(q:Query):Promise<SecurityState>{
@@ -68,7 +95,9 @@ export class AdminService {
  const session=(await q<{created_at:Date;last_seen_at:Date;revoked_at:Date|null}>("SELECT created_at,last_seen_at,revoked_at FROM core.sessions WITH(UPDLOCK,HOLDLOCK) WHERE token_hash=@hash AND user_id=@id",{hash:req.sessionHash,id:req.user.id})).recordset[0];
  const s=await this.snapshot(q),actor=s.users.find(u=>u.id===req.user.id);
  if(!session||!live(session)||!actor||!active(actor)||actor.must_change_password)throw new UnauthorizedException();
- if(!actor.require_mfa||Date.now()-+new Date(session.created_at)>900000)throw new ForbiddenException('Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
+ if(!actor.require_mfa)throw new ForbiddenException('La cuenta administrativa requiere MFA.');
+ // Module management uses the normal session lifetime; security administration still requires recent sign-in.
+ if(permission!=='CORE.MODULES.MANAGE'&&Date.now()-+new Date(session.created_at)>900000)throw new ForbiddenException('Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
  await this.unscoped(q,actor.id);
  if(!effective(s,actor.id).includes(permission))throw new ForbiddenException('No tienes permiso para esta acción.');
  const change=await apply(q,s);preserveAdministrator(s);

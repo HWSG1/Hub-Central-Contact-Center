@@ -30,7 +30,7 @@ function render(migrations) {
 DECLARE @Manifest table(name varchar(200) PRIMARY KEY,sha256 char(64) NOT NULL);
 INSERT @Manifest(name,sha256) VALUES ${manifest};
 -- Base dedicada: no aceptar tablas ajenas al Hub.
-IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N'core') OR (schema_id=SCHEMA_ID(N'dbo') AND name=N'hub_migrations')))
+IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N'core') OR (schema_id=SCHEMA_ID(N'ofertas') AND name IN(N'ofertas_cliente',N'base_tlv') AND OBJECT_ID(N'core.install_ofertas_v1',N'P') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N'mod[_]%' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N'hub_package_owner')) AND OBJECT_ID(N'core.create_package_storage',N'P') IS NOT NULL) OR (schema_id=SCHEMA_ID(N'dbo') AND name=N'hub_migrations')))
  THROW 51710,'Existen tablas ajenas al Hub. Usar una base dedicada.',1;
 IF SCHEMA_ID(N'core') IS NOT NULL AND OBJECT_ID(N'dbo.hub_migrations',N'U') IS NULL
  THROW 51711,'Existe core sin historial de migraciones. Revisar con el DBA.',1;

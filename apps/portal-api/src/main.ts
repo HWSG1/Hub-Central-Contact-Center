@@ -11,7 +11,7 @@ import { config } from './config.js';
 import type { Request,Response,NextFunction } from 'express';
 async function start(){const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn','log']});app.setGlobalPrefix('api');
  app.use(helmet({strictTransportSecurity:config.NODE_ENV==='production'?{maxAge:31536000,includeSubDomains:true}:false}));
- app.use(json({limit:'16kb'}));app.use(cookieParser());
+ app.use('/api/admin/modules/analyze',json({limit:'3mb'}));app.use('/api/admin/modules/install-package',json({limit:'3mb'}));app.use(json({limit:'32kb'}));app.use(cookieParser());
  app.use((req:Request,res:Response,next:NextFunction)=>{Object.assign(req,{correlation:randomUUID()});res.setHeader('Cache-Control','no-store');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');next();});
  app.use('/api',rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-8',legacyHeaders:false}));
  app.use('/api/auth/activation',rateLimit({windowMs:900000,limit:10,standardHeaders:'draft-8',legacyHeaders:false}));

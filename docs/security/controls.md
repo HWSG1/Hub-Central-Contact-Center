@@ -23,3 +23,11 @@ Bootstrap remoto local: admin:remote genera SQL privado con destino explícito y
 SQL TLS: cifrado obligatorio; validación del certificado por defecto. Excepción solicitada por el operador: SQL_TRUST_SERVER_CERTIFICATE=true omite la autenticación del servidor mediante certificado. No considerar verificada la identidad SQL con esa opción; pendiente prueba remota.
 
 Asistente ZIP inicial: pruebas automatizadas de límites, archivos no admitidos, manifiesto alterado y autoridad/MFA/auditoría. No se extraen ni ejecutan artefactos. Validación integral del asistente con SQL y sesión real pendiente; firmas y despliegue externo no implementados.
+
+Administración de módulos: por decisión del operador, CORE.MODULES.MANAGE no exige inicio en los últimos 15 minutos; conserva cuenta MFA, sesión vigente, permisos, alcance y auditoría. Usuarios/roles/permisos mantienen inicio reciente. Pruebas cubren sesión activa antigua y rechazo por caducidad, inactividad y revocación.
+
+OFERTAS: permiso OFERTAS.USE, sesión/CSRF del Hub, módulo publicado, rechazo de alcances sin mapeo, consultas parametrizadas con columna de lista cerrada. Auditoría no copia identificadores de búsqueda ni datos del cliente. Instalador SQL fijo bajo principal sin login, runtime sin CREATE TABLE; rollback junto a catálogo/auditoría. Validación de sintaxis y pruebas con adaptador completadas; prueba del procedimiento en SQL real pendiente por conexión local no disponible.
+
+TLV 007: solo metadatos de Excel en código; detalle filtrado por perfil y condiciones AOL en servidor. No se auditan DNI, cuentas ni valores de campos. No se otorgó INSERT/UPDATE al runtime. Integración SQL real y carga SSMS pendientes.
+
+Paquetes v2: editor confiable externo, firma Ed25519 y hashes al instalar y ejecutar. Código backend en proceso Node 26 con permisos limitados y sin secretos; red, procesos y lectura exterior comprobados por pruebas reales. Frontend sandbox/CSP y puente autenticado. Broker SELECT por esquema y DDL declarativo bajo principal sin login. Primera versión no actualiza ni borra módulos. No se presenta como sandbox de SO para código hostil. SQL real y prueba de instalación completa pendientes; ver manual 12.

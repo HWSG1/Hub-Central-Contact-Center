@@ -25,3 +25,18 @@ Alta local por invitación: requiere migración 004; ver docs/security/user-enro
 Módulos incluidos: importación de descriptor hub-builtin-v1 y control de publicación implementados para CORTA_CUOTAS, migración 005. El frontend usa ruta lazy estática; la lógica de negocio se ejecuta en servidor con permiso y módulo publicado. Paquetes externos y pipeline siguen fuera de esta entrega.
 
 Asistente inicial ZIP: /modules/import organiza análisis, configuración, acceso, impacto, instalación y publicación. La API admite un único manifest.json de módulo incluido, sin extracción ni ejecución. El análisis se audita y el paquete se revalida en la instalación. El servicio separado para desplegar módulos nuevos permanece pendiente.
+
+## ADR 003 — Instalador fijo de OFERTAS
+Por solicitud del usuario, la tabla de negocio se crea al instalar el módulo. La migración 006 registra un procedimiento fijo sin parámetros, ejecutado bajo un usuario sin login propietario de su esquema y con CREATE TABLE. La cuenta runtime solo obtiene EXECUTE y SELECT; no DDL general. La API invoca el procedimiento conocido dentro de su transacción administrativa, después de revalidar autoridad y antes del registro/auditoría. No se ejecutan scripts proporcionados en ZIP. Este contrato no permite instalar código externo ni migraciones arbitrarias.
+
+007 extiende el instalador fijo con ofertas.base_tlv. Las instalaciones nuevas crean ambas tablas en la misma transacción administrativa; las existentes reciben la tabla nueva en la migración, sin copiar ni borrar filas. El detalle TLV se filtra por matriz en servidor.
+
+007 extiende el instalador fijo con ofertas.base_tlv. Las instalaciones nuevas crean ambas tablas en la misma transacción administrativa; las existentes reciben la tabla nueva en la migración, sin copiar ni borrar filas. El detalle TLV se filtra por matriz en servidor.
+
+
+## ADR 004 — Paquetes independientes autorizados por el usuario
+Sustituye la restricción de integración exclusiva en compilación para el nuevo formato hub-package-v2. El ZIP firmado Ed25519 incluye frontend HTML/JS autocontenido, backend ESM autocontenido, consultas declarativas y definición de tablas JSON. Los paquetes v1 conservan su contrato anterior.
+El editor se autoriza mediante clave pública fuera del ZIP; el archivo cargado no puede autorizarse a sí mismo. Al analizar/instalar se valida firma, hashes, contrato, límites y salud del backend. El ZIP queda en SQL junto al registro del módulo; DDL, permiso, paquete y auditoría son una transacción. Se publica en un paso independiente.
+Backend en proceso Node >=26 con permisos: solo lectura de su carpeta temporal, sin red, procesos, addons o escritura ni credenciales heredadas. Esto reduce capacidades; no es un sandbox de sistema operativo para código hostil. Solo se admiten editores confiables y revisados. Se limita concurrencia, memoria, tiempo, volumen y número de consultas. El broker solo ejecuta SELECT parametrizado de tablas declaradas dentro de mod_<codigo>; ninguna consulta SQL libre.
+Frontend en iframe sandbox sin same-origin ni acceso al DOM/cookies del Hub, con CSP y puente postMessage que valida ventana y operaciones; el padre realiza llamadas autenticadas/CSRF. El código del editor sigue siendo de confianza; sandbox/CSP no reemplazan revisión.
+La actualización 008 prepara una vez los procedimientos genéricos y la tabla de paquetes. Las migraciones de un paquete son instrucciones de creación JSON, no scripts SQL arbitrarios. En v2 inicial no hay ALTER/DROP, reemplazo de versiones ni escritura de datos desde el backend del paquete. Las bases previas no se adoptan ni se borran. Node 26 puede coexistir con Node 24 usado por Angular/Hub mediante MODULE_NODE.

@@ -1,0 +1,10 @@
+{
+  "format": "hub-builtin-v1",
+  "id": "OFERTAS",
+  "version": "1.0.0",
+  "name": "Buscador de ofertas y calculadoras",
+  "route": "/modules/ofertas",
+  "permission": "OFERTAS.USE",
+  "description": "Consulta ofertas por cliente y base; simula Extra, Intra y Corta Cuotas.",
+  "descriptorSha256": "2ca416bced750a7d32dacd3b2e7f8725d6ab8ae498cc43fd15d78739baa544bb"
+}

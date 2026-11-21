@@ -1,0 +1,140 @@
+{
+  "search_dni": {
+    "table": "base_tlv",
+    "columns": [
+      "id",
+      "TIPO_BASE",
+      "DNI",
+      "CODIGO_CLIENTE",
+      "CUENTA",
+      "NOMBRE_CLIENTE",
+      "NOMBRE_TC",
+      "TIPO_FINANCIAMIENTO",
+      "MONTO_OFERTA_EXTRA",
+      "MONTO_OFERTA_INTRA",
+      "MONTO_OFERTA_CC",
+      "TASA_EXTRA",
+      "TASA_INTRA"
+    ],
+    "filters": [
+      {
+        "column": "DNI",
+        "param": "value",
+        "type": "text"
+      }
+    ],
+    "active": true,
+    "page": true
+  },
+  "search_codigo_cliente": {
+    "table": "base_tlv",
+    "columns": [
+      "id",
+      "TIPO_BASE",
+      "DNI",
+      "CODIGO_CLIENTE",
+      "CUENTA",
+      "NOMBRE_CLIENTE",
+      "NOMBRE_TC",
+      "TIPO_FINANCIAMIENTO",
+      "MONTO_OFERTA_EXTRA",
+      "MONTO_OFERTA_INTRA",
+      "MONTO_OFERTA_CC",
+      "TASA_EXTRA",
+      "TASA_INTRA"
+    ],
+    "filters": [
+      {
+        "column": "CODIGO_CLIENTE",
+        "param": "value",
+        "type": "text"
+      }
+    ],
+    "active": true,
+    "page": true
+  },
+  "search_cuenta": {
+    "table": "base_tlv",
+    "columns": [
+      "id",
+      "TIPO_BASE",
+      "DNI",
+      "CODIGO_CLIENTE",
+      "CUENTA",
+      "NOMBRE_CLIENTE",
+      "NOMBRE_TC",
+      "TIPO_FINANCIAMIENTO",
+      "MONTO_OFERTA_EXTRA",
+      "MONTO_OFERTA_INTRA",
+      "MONTO_OFERTA_CC",
+      "TASA_EXTRA",
+      "TASA_INTRA"
+    ],
+    "filters": [
+      {
+        "column": "CUENTA",
+        "param": "value",
+        "type": "text"
+      }
+    ],
+    "active": true,
+    "page": true
+  },
+  "detail": {
+    "table": "base_tlv",
+    "columns": [
+      "id",
+      "TIPO_BASE",
+      "DNI",
+      "CODIGO_CLIENTE",
+      "COD_CLIENTE_CRM",
+      "CUENTA",
+      "NUMERO_ADICIONALES_QUE_APLICA",
+      "NOMBRE_TC",
+      "METAL",
+      "HRE_ACTIVO",
+      "ASISTENCIA_VIP_ACTIVO",
+      "VAP_ACTIVO",
+      "TASA_EXTRA",
+      "MONTO_OFERTA_EXTRA",
+      "TASA_INTRA",
+      "MONTO_OFERTA_INTRA",
+      "MONTO_OFERTA_CC",
+      "RANGO_TASA_EXTRA",
+      "ID_AREA",
+      "MES_BASE",
+      "MAIL",
+      "LIMITE",
+      "FLAG_FINAL_PAGO_CONTADO",
+      "FLAG_EMPLEADO",
+      "ID_ORDEN_CRM",
+      "TIPO_FINANCIAMIENTO",
+      "FECHA_COMPRA",
+      "PLAZO",
+      "CUENTA_DESTINO",
+      "MONTO",
+      "COMERCIO",
+      "NOMBRE_CLIENTE",
+      "CATEGORIA",
+      "PAGO_IMPUESTO",
+      "COTIZACION",
+      "OFERTA_CRM",
+      "FLAG1",
+      "COLOR_ACTUAL",
+      "LIMITE_NUEVO_USD",
+      "COLOR_NUEVO",
+      "DIFERENCIA",
+      "CANTIDAD_TC",
+      "TC_INGRESADA"
+    ],
+    "filters": [
+      {
+        "column": "id",
+        "param": "id",
+        "type": "id"
+      }
+    ],
+    "active": true,
+    "page": false
+  }
+}

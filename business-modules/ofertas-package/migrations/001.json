@@ -1,0 +1,236 @@
+{
+  "tables": [
+    {
+      "name": "base_tlv",
+      "columns": [
+        {
+          "name": "TIPO_BASE",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "DNI",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "CODIGO_CLIENTE",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "COD_CLIENTE_CRM",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "CUENTA",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "NUMERO_ADICIONALES_QUE_APLICA",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "NOMBRE_TC",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "METAL",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "HRE_ACTIVO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "ASISTENCIA_VIP_ACTIVO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "VAP_ACTIVO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "TASA_EXTRA",
+          "type": "decimal(9,4)",
+          "nullable": true
+        },
+        {
+          "name": "MONTO_OFERTA_EXTRA",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "TASA_INTRA",
+          "type": "decimal(9,4)",
+          "nullable": true
+        },
+        {
+          "name": "MONTO_OFERTA_INTRA",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "MONTO_OFERTA_CC",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "RANGO_TASA_EXTRA",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "ID_AREA",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "MES_BASE",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "MAIL",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "LIMITE",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "FLAG_FINAL_PAGO_CONTADO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "FLAG_EMPLEADO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "ID_ORDEN_CRM",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "TIPO_FINANCIAMIENTO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "FECHA_COMPRA",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "PLAZO",
+          "type": "int",
+          "nullable": true
+        },
+        {
+          "name": "CUENTA_DESTINO",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "MONTO",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "COMERCIO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "NOMBRE_CLIENTE",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "CATEGORIA",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "PAGO_IMPUESTO",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "COTIZACION",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "OFERTA_CRM",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "FLAG1",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "COLOR_ACTUAL",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "LIMITE_NUEVO_USD",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "COLOR_NUEVO",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "DIFERENCIA",
+          "type": "decimal(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "CANTIDAD_TC",
+          "type": "int",
+          "nullable": true
+        },
+        {
+          "name": "TC_INGRESADA",
+          "type": "varchar(40)",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        [
+          "DNI",
+          "activo",
+          "id"
+        ],
+        [
+          "CODIGO_CLIENTE",
+          "activo",
+          "id"
+        ],
+        [
+          "CUENTA",
+          "activo",
+          "id"
+        ]
+      ]
+    }
+  ]
+}

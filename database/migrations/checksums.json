@@ -3,5 +3,8 @@
   "002_local_mfa.sql": "c9be5a90540e9485a98ff7c0a175dcfc9780b564e8e3e077a94b3822afd97137",
   "003_security_administration.sql": "b47946a7a1243a9daa49f792d0ce6045b3a110b31bd571329a0f3a783e3ca17c",
   "004_user_enrollment.sql": "56ad82ae573efcac1148b011b7651c4bda7eb217b13826f3c4c9186b253aed9c",
-  "005_builtin_modules.sql": "12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3"
+  "005_builtin_modules.sql": "12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3",
+  "006_offers_installer.sql": "0fef9559a49898f5eea85c2658640064efe157ef11da7c429af2bfed473c6641",
+  "007_offers_tlv.sql": "8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac",
+  "008_independent_modules.sql": "38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae"
 }
