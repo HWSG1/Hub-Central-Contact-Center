@@ -3,7 +3,7 @@ import {Database} from '../database.js';
 import type {SessionRequest} from '../security/guard.js';
 import {inspectFullPackage} from './archive.js';
 import {executeBackend} from './runner.js';
-import {compileQuery} from './query.js';
+import {compileQuery,compileInsert} from './query.js';
 @Controller('extensions')
 export class PackageRuntimeController {
  constructor(private db:Database){}
@@ -24,10 +24,11 @@ export class PackageRuntimeController {
   const {operation,input}=body as {operation:string;input:unknown};
   if(!pkg.manifest.operations.includes(operation)||JSON.stringify(input??null).length>16384)throw new BadRequestException('Operación inválida.');
   try{
-   const result=await executeBackend(pkg.files['backend/main.mjs'],operation,input,async(name,params)=>{
-    // Recheck authorization before every brokered SQL query.
+   const result=await executeBackend(pkg.files['backend/main.mjs'],operation,input,async(name,params,mode)=>{
+    // Recheck authorization before every brokered operation. Identity comes from the server session.
     await this.authorize(req,code);
-    const query=compileQuery(code,pkg.queries,name,params);return (await this.db.query(query.sql,query.params)).recordset;
+    const query=mode==='write'?compileInsert(code,pkg.queries,name,params,req.user.id):compileQuery(code,pkg.queries,name,params,req.user.id);
+    return (await this.db.query(query.sql,query.params)).recordset;
    });
    await this.authorize(req,code);
    await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,details) VALUES(@actor,'MODULE.EXECUTE','SUCCESS',@correlation,'module',@details)",{actor:req.user.id,correlation:req.correlation,details:JSON.stringify({code,operation})});return {result};
