@@ -20,7 +20,11 @@
               "autoCsp": true
             },
             "assets": [
-              "apps/portal-web/public"
+              {
+                "glob": "**/*",
+                "input": "apps/portal-web/public",
+                "output": "/"
+              }
             ]
           },
           "configurations": {
