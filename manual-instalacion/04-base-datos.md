@@ -39,3 +39,12 @@ Crear el esquema no crea el administrador del portal. El login SQL y el usuario 
 El SQL se genera automáticamente desde las migraciones mediante npm.cmd run docs:build. Mantener los parámetros del archivo versionado en NULL y @Apply=0; sólo parametrizar una copia de ejecución. No subir destinos/secretos operativos nuevos al repositorio público. Para otra PC, los hashes permanecen estables porque Git conserva LF para las migraciones.
 
 npm.cmd run db:migrate continúa existiendo para desarrolladores, pero conecta a la base indicada en .env y escribe. No usarlo para probar conectividad; usar db:check. El camino operativo recomendado en este manual es el SQL consolidado en SSMS.
+
+
+## Migración 009 · Favoritos por usuario (menú «Mis aplicaciones»)
+
+La migración `009_favorites_runtime.sql` **no crea tablas nuevas ni modifica ofertas**. La tabla `core.user_favorites` ya existía; esta actualización concede al rol limitado `hub_runtime` únicamente INSERT y DELETE sobre esa tabla. El backend solo permite fijar aplicaciones publicadas y autorizadas para el usuario autenticado.
+
+Para aplicar en `ContactCenterHub_Dev`: respaldar la base, detener la API, abrir **una copia** de `manual-instalacion/sql/Instalar-Actualizar-Hub.sql` en SSMS, indicar `@ExpectedServer` y `@DatabaseName`, ejecutar con `@Apply=0` para revisar y luego con `@Apply=1` tras la aprobación. No ejecutar `009` por separado. Reiniciar la API y actualizar el frontend.
+
+La auditoría paginada utiliza la tabla `core.audit_events` existente, con filtros de fechas y consultas de tamaño limitado. No requiere otra migración. Los favoritos se guardan por usuario y no cambian los roles ni permisos. No hay importación automática de los ejemplos del HTML de referencia.
