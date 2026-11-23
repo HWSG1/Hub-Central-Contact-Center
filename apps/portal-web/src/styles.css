@@ -454,19 +454,65 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
 .portal:not(.dark) .app-card .banner-link:visited {color:#fff;}
 .portal:not(.dark) .app-card .banner-link:hover {color:#fff;}
 
-/* Banco Atlántida: logo completo en la esquina superior izquierda, según referencia. */
-.sidebar .portal-brand {min-width:0;display:flex;justify-content:flex-start;align-items:center;min-height:54px;margin:-16px 0 0 -12px;max-width:100%}
-.bank-brand-image {display:block;width:auto;height:auto;object-fit:contain;object-position:left center}
-.bank-brand-full {max-width:54px;max-height:54px}
+/* Identidad corporativa alineada con el contenido del menú lateral. */
+.sidebar .portal-brand {
+ display:flex;
+ flex-direction:row;
+ align-items:center;
+ justify-content:flex-start;
+ gap:12px;
+ min-width:0;
+ width:100%;
+ min-height:56px;
+ margin:0 0 12px;
+ padding:2px 6px;
+}
+.bank-brand-image {
+ display:block;
+ width:auto;
+ height:auto;
+ object-fit:contain;
+ object-position:center;
+ flex-shrink:0;
+}
+.bank-brand-full {width:48px;max-width:48px;height:48px;max-height:48px}
 .bank-brand-icon {display:none}
-.collapsed .sidebar .portal-brand {min-height:44px;margin:0}
+.sidebar .portal-brand .bank-brand-label {
+ display:block;
+ min-width:0;
+ font-size:13px;
+ font-weight:500;
+ line-height:1.35;
+ white-space:nowrap;
+ letter-spacing:-.01em;
+ color:var(--text);
+}
+.sidebar .portal-brand .bank-brand-label b {
+ display:block;
+ margin:1px 0 0;
+ font-size:19px;
+ font-weight:700;
+ line-height:1.15;
+ letter-spacing:-.025em;
+}
+.collapsed .sidebar .portal-brand {
+ justify-content:center;
+ min-height:46px;
+ margin:0 0 8px;
+ padding:0;
+ gap:0;
+}
 .collapsed .bank-brand-full {display:none}
-.collapsed .bank-brand-icon {display:block;width:39px;height:39px;max-width:39px;max-height:39px}
-@media(max-width:640px){.sidebar .portal-brand{margin:0;min-height:54px}}
-
-/* Denominación del Hub junto al logo bancario, sin ampliar el menú. */
-.sidebar .portal-brand {gap:10px}
-.sidebar .portal-brand .bank-brand-label {font-size:14px;line-height:1.3;white-space:nowrap;min-width:0}
-.sidebar .portal-brand .bank-brand-label b {display:block;font-size:19px;line-height:1.25;font-weight:700}
+.collapsed .bank-brand-icon {
+ display:block;
+ width:40px;
+ max-width:40px;
+ height:40px;
+ max-height:40px;
+}
 .collapsed .sidebar .bank-brand-label {display:none}
-@media (max-width:640px){.collapsed .sidebar .bank-brand-label{display:block}}
+@media(max-width:640px){
+ .sidebar .portal-brand {min-height:52px;margin:0 0 8px;padding:0 6px}
+ .collapsed .sidebar .portal-brand {justify-content:flex-start;gap:10px;padding:0 6px}
+ .collapsed .sidebar .bank-brand-label {display:block}
+}
