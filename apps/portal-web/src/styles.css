@@ -453,3 +453,8 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
 .portal:not(.dark) .app-card .banner-link,
 .portal:not(.dark) .app-card .banner-link:visited {color:#fff;}
 .portal:not(.dark) .app-card .banner-link:hover {color:#fff;}
+
+/* Identidad Banco Atlántida. Requiere los archivos logo-10 y logo-12 aportados por Marca. */
+.portal-brand {min-width:0}
+.bank-brand-image {display:block;max-width:100%;width:auto;max-height:50px;object-fit:contain;object-position:left center}
+.collapsed .bank-brand-image {width:38px;height:38px;object-fit:contain}
