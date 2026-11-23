@@ -471,6 +471,7 @@ GRANT INSERT, DELETE ON OBJECT::core.user_favorites TO hub_runtime;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3'');
  END;
+
  IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''010_tlv_auditoria_installer.sql'')
  BEGIN
  EXEC sys.sp_executesql N''-- 010: Instalador controlado para la auditoria del modulo OFERTAS_TLV.
