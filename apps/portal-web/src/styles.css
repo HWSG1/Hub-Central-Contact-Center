@@ -454,11 +454,12 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
 .portal:not(.dark) .app-card .banner-link:visited {color:#fff;}
 .portal:not(.dark) .app-card .banner-link:hover {color:#fff;}
 
-/* Banco Atlántida: logo vertical expandido y emblema en menú compacto. */
-.portal-brand {min-width:0;display:flex;justify-content:center;align-items:center;min-height:82px}
-.bank-brand-image {display:block;width:auto;max-width:min(100%,136px);max-height:86px;height:auto;object-fit:contain}
+/* Banco Atlántida: logo completo en la esquina superior izquierda, según referencia. */
+.sidebar .portal-brand {min-width:0;display:flex;justify-content:flex-start;align-items:center;min-height:54px;margin:-16px 0 0 -12px;max-width:100%}
+.bank-brand-image {display:block;width:auto;height:auto;object-fit:contain;object-position:left center}
+.bank-brand-full {max-width:54px;max-height:54px}
 .bank-brand-icon {display:none}
-.collapsed .portal-brand {min-height:44px}
+.collapsed .sidebar .portal-brand {min-height:44px;margin:0}
 .collapsed .bank-brand-full {display:none}
-.collapsed .bank-brand-icon {display:block;width:39px;height:39px;max-width:39px;max-height:39px;object-fit:contain}
-@media(max-height:740px){.portal-brand{min-height:68px}.bank-brand-full{max-height:68px}}
+.collapsed .bank-brand-icon {display:block;width:39px;height:39px;max-width:39px;max-height:39px}
+@media(max-width:640px){.sidebar .portal-brand{margin:0;min-height:54px}}
