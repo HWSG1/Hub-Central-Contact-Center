@@ -56,7 +56,7 @@ test('signed full module installs code, tables and permission atomically; audit 
  const folder=mkdtempSync(join(tmpdir(),'hub-publisher-test-')),pair=generateKeyPairSync('ed25519');
  const previousTrust=process.env.MODULE_TRUST_FILE,previousNode=process.env.MODULE_NODE;
  try{
-  process.env.MODULE_TRUST_FILE=join(folder,'trust.json');process.env.MODULE_NODE=existsSync('C:/Program Files/nodejs/node.exe')?'C:/Program Files/nodejs/node.exe':process.execPath;
+  process.env.MODULE_TRUST_FILE=join(folder,'trust.json');process.env.MODULE_NODE=previousNode??(existsSync('C:/Program Files/nodejs/node.exe')?'C:/Program Files/nodejs/node.exe':process.execPath);
   writeFileSync(process.env.MODULE_TRUST_FILE,JSON.stringify({test:String(pair.publicKey.export({format:'pem',type:'spki'}))}));
   const files:Record<string,Uint8Array>={'frontend/index.html':strToU8('<h1>Test</h1>'),'backend/main.mjs':strToU8('export const handle=()=>({ok:true})'),'backend/queries.json':strToU8('{}'),'migrations/001.json':strToU8(JSON.stringify({tables:[{name:'items',columns:[{name:'value',type:'nvarchar(300)',nullable:true}],indexes:[]}]}))};
   const manifest={format:'hub-package-v2',id:'INDEPENDENT',version:'1.0.0',name:'Independent',description:'Test',hostApi:1,publisher:'test',permission:'INDEPENDENT.USE',operations:['health'],files:Object.fromEntries(Object.entries(files).map(([n,b])=>[n,createHash('sha256').update(b).digest('hex')]))};
