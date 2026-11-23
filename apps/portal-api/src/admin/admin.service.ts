@@ -28,9 +28,14 @@ export class AdminService {
  async fullPackage(req:SessionRequest,input:{archive:string;reason:string},install:boolean){
   let pkg;try{pkg=inspectFullPackage(input.archive);}catch(error){throw new BadRequestException('Paquete rechazado: '+(error instanceof Error?error.message:'Formato inválido.'));}
   const manifest=pkg.manifest,id=randomUUID();let upgrade=false,wasPublished=false;
+  const writableTables=[...new Set(Object.values(pkg.queries).filter(q=>'kind' in q&&q.kind==='insert').map(q=>q.table))];
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
+   if(writableTables.length){
+    const append=(await q("SELECT OBJECT_ID(N'core.grant_package_append',N'P') AS ready")).recordset[0];
+    if(!append?.ready)throw new ConflictException('El módulo requiere la actualización SQL 011 para registro seguro de desembolsos.');
+   }
    const existing=(await q<{module_id:string;version:string;manifest:string;installation_id:string;state:string}>(
     `SELECT TOP(1) m.id AS module_id,v.version,v.manifest,i.id AS installation_id,i.state
      FROM core.modules m
@@ -75,6 +80,7 @@ export class AdminService {
      await q('EXEC core.create_package_storage @code=@code,@definition=@definition;',{code:manifest.id,definition:JSON.stringify(pkg.migration)});
      await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
      await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
+     for(const table of writableTables)await q('EXEC core.grant_package_append @code=@code,@table=@table;',{code:manifest.id,table});
     }
     // La preparación SQL fija solo se aplica en instalaciones NUEVAS de TLV.
     // Una actualización de interfaz no modifica ningún objeto de SQL Server.
