@@ -27,7 +27,7 @@ export class AdminService {
 
  async fullPackage(req:SessionRequest,input:{archive:string;reason:string},install:boolean){
   let pkg;try{pkg=inspectFullPackage(input.archive);}catch(error){throw new BadRequestException('Paquete rechazado: '+(error instanceof Error?error.message:'Formato inválido.'));}
-  const manifest=pkg.manifest,id=randomUUID();
+  const manifest=pkg.manifest,id=randomUUID();let upgrade=false;
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
@@ -40,7 +40,7 @@ export class AdminService {
      WHERE m.code=@code ORDER BY i.created_at DESC,i.id DESC`,{code:manifest.id})).recordset[0];
    let changeType:'NEW'|'FRONTEND_UPGRADE'='NEW';
    if(existing){
-    changeType='FRONTEND_UPGRADE';
+    upgrade=true;changeType='FRONTEND_UPGRADE';
     const previous=JSON.parse(String(existing.manifest)) as typeof manifest;
     const parseVersion=(v:string)=>v.split('.').map(n=>Number(n));
     const before=parseVersion(existing.version),after=parseVersion(manifest.version);
@@ -74,7 +74,7 @@ export class AdminService {
    return {resourceId:existing?.module_id??id,before:existing?{code:manifest.id,version:existing.version,state:existing.state}:null,after:{code:manifest.id,version:manifest.version,sha256:pkg.sha256,publisher:manifest.publisher,schema:'mod_'+manifest.id.toLowerCase(),mode:changeType,state:install?(existing?.state??'VALIDATED'):'ANALYZED'}};
   });
   }catch(error){await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,'FAILURE',@correlation,'module',@id,@details)",{actor:req.user.id,action:install?'MODULE.INSTALL':'MODULE.ANALYZE',correlation:req.correlation,id,details:JSON.stringify({code:manifest.id,version:manifest.version,sha256:pkg.sha256})}).catch(()=>{});throw error;}
-  return install?{ok:true,id}:{manifest,sha256:pkg.sha256,size:pkg.size,files:Object.keys(pkg.files),schema:'mod_'+manifest.id.toLowerCase(),tables:pkg.migration.tables.map(t=>t.name)};
+  return install?{ok:true,id,upgrade}:{manifest,upgrade,sha256:pkg.sha256,size:pkg.size,files:Object.keys(pkg.files),schema:'mod_'+manifest.id.toLowerCase(),tables:pkg.migration.tables.map(t=>t.name)};
  }
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
