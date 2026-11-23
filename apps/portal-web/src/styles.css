@@ -651,3 +651,107 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
   height:36px;
  }
 }
+
+
+/* Lateral compacto: sin barra horizontal; scroll vertical invisible pero funcional. */
+@media (min-width:40.001rem) {
+ .sidebar {
+  overflow-x:hidden;
+  overflow-y:auto;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+ }
+ .sidebar::-webkit-scrollbar {display:none;width:0;height:0}
+ .sidebar nav {min-width:0;width:100%;max-width:100%}
+ .sidebar nav a {min-width:0;max-width:100%}
+}
+
+/* Centro exacto del isotipo sobre la columna de iconos en modo compacto. */
+@media (min-width:40.001rem) {
+ .collapsed .sidebar-header {
+  position:relative;
+  width:calc(100% + 1.5rem);
+  min-width:0;
+  overflow:visible;
+ }
+ .collapsed .sidebar-header .portal-brand {
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  flex:none;
+  width:28px;
+  height:32px;
+  min-width:0;
+  margin:0;
+  padding:0;
+  justify-content:center;
+ }
+ .collapsed .sidebar-header .bank-brand-icon {
+  display:block;
+  width:28px;
+  height:28px;
+  max-width:28px;
+  max-height:28px;
+ }
+ .collapsed .sidebar-header .sidebar-collapse-btn {
+  position:absolute;
+  right:1px;
+  top:50%;
+  transform:translateY(-50%);
+  flex:none;
+  width:18px;
+  height:26px;
+  padding:0;
+ }
+ .collapsed .sidebar-header .sidebar-collapse-btn .hub-nav-icon {
+  width:14px;
+  min-width:14px;
+  height:14px;
+ }
+ .collapsed .sidebar nav a {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+ }
+}
+@media (min-width:40.001rem) and (max-width:64rem) {
+ .sidebar:not(.no-such-class) .sidebar-header {
+  position:relative;
+  width:calc(100% + 1.5rem);
+  min-width:0;
+ }
+ .sidebar .sidebar-header .portal-brand {
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:28px;
+  height:32px;
+  min-width:0;
+  flex:none;
+  justify-content:center;
+ }
+ .sidebar .sidebar-header .bank-brand-icon {
+  display:block;
+  width:28px;
+  height:28px;
+  max-width:28px;
+  max-height:28px;
+ }
+ .sidebar .sidebar-header .sidebar-collapse-btn {
+  position:absolute;
+  right:1px;
+  top:50%;
+  transform:translateY(-50%);
+  flex:none;
+  width:18px;
+  height:26px;
+  padding:0;
+ }
+ .sidebar .sidebar-header .sidebar-collapse-btn .hub-nav-icon {
+  width:14px;
+  min-width:14px;
+  height:14px;
+ }
+}
