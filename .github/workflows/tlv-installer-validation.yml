@@ -50,3 +50,5 @@ jobs:
         run: npm test
       - name: Verificar sintaxis del importador Python
         run: python -m py_compile apps/portal-api/scripts/tlv-import.py
+      - name: Probar importacion TLV con columnas opcionales
+        run: python -m unittest discover -s apps/portal-api/scripts/tests -p 'test_*.py' -v

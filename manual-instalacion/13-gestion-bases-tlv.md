@@ -14,7 +14,7 @@ La actualización de **módulo ZIP 1.3.0** incorpora el PDF con el diseño de am
 - Solo cuentas con CORE.MODULES.MANAGE, MFA obligatorio y sesión iniciada hace menos de 15 minutos pueden ver el panel, previsualizar o cargar. Es un permiso administrativo; no concederlo a los operadores.
 
 ## Uso
-1. Seleccionar un archivo **.xlsx o .csv** (33 columnas oficiales, límite 30 MB; XLSX hoja Consulta1).
+1. Seleccionar un archivo **.xlsx o .csv** (límite 30 MB; XLSX hoja `Consulta1`). Se admiten subconjuntos de las **42 columnas oficiales** del módulo Ofertas TLV, en cualquier orden; las ausentes se cargan como `NULL`. El archivo `Noviembre 2026.xlsx` (36 columnas) es estructuralmente compatible. Las columnas obligatorias son `TIPO_BASE` y al menos un identificador (`DNI`, `CODIGO_CLIENTE` o `CUENTA`).
 2. **Previsualizar**: no modifica SQL, recorre todas las filas, comprueba columnas, tipos, ceros iniciales, fechas Excel y conteos por TIPO_BASE.
 3. Verificar totales y rechazados = 0. La comprobación dura 10 minutos y está ligada a la misma sesión y SHA-256 del archivo.
 4. Escribir **CAMBIAR_BASE** y activar. El backend vuelve a validar los registros y los carga inicialmente con activo=0; solo cuando termina activa el lote nuevo e inactiva el anterior en transacción.
@@ -25,7 +25,8 @@ La actualización de **módulo ZIP 1.3.0** incorpora el PDF con el diseño de am
 - No ejecutamos cargas reales ni verificamos permisos del servicio Windows desde ChatGPT. Se requiere una prueba end-to-end en el entorno local/preproducción.
 - El proceso HTTP de importación puede tardar minutos. Para producción de alto tráfico se recomienda ejecutar los lotes como trabajos con cola y sondeo de estado.
 - Los registros históricos permanecen físicamente en SQL Server. Definir política de retención, capacidad, respaldos y restauración.
-- CSV: UTF-8 y cabeceras exactamente iguales al Excel; .xlsx admite fechas seriadas Excel 1900/1904.
+- CSV: UTF-8 y encabezados del contrato TLV (se permiten columnas opcionales ausentes); .xlsx admite fechas seriadas Excel 1900/1904. Se soportan alias documentados como `COD_CLIENTE_IBS` → `CODIGO_CLIENTE`, `IDENTIDAD` → `DNI`, `CUENTA_TC` → `CUENTA`, `PRODUCTO` → `NOMBRE_TC`, `PAGO_IMPUESTOS` → `PAGO_IMPUESTO`. Si hay dos cabeceras que se normalizan al mismo campo o columnas desconocidas, se rechaza el archivo en lugar de omitir datos.
+- Si el Excel incluye campos adicionales del ejemplo de bases no previstos en los **42 campos del contrato** (por ejemplo, teléfonos específicos), se debe revisar y ampliar el contrato/tabla mediante un cambio controlado antes de importarlos; no se ignoran columnas desconocidas.
 - El PDF se descarga en tamaño carta con logotipo oficial, información del cliente si se seleccionó una oferta, condiciones, amortización y campos de firma; las fechas no disponibles se dejan vacías. El PDF usa resultados del backend, sin recalcular importes.
 - Registrar la clave pública **adicional de pruebas** del paquete ZIP 1.2 mediante scripts/registrar-clave-tlv-12.cjs antes de importarlo. El script conserva todas las claves previas y genera backup de la confianza.
 
@@ -33,5 +34,5 @@ La actualización de **módulo ZIP 1.3.0** incorpora el PDF con el diseño de am
 - **Codigo**: `apps/portal-api/src/admin/admin.service.ts` invoca la rutina SQL preaprobada para OFERTAS_TLV en la transaccion de alta o actualizacion. El contrato de paquetes sigue rechazando SQL arbitrario.
 - **SQL**: la 010 crea el procedimiento fijo y resuelve dependencias de modulos TLV ya existentes. No aplicarla con npm db:migrate sobre bases corporativas: usar la revision DBA con servidor y base explicitados.
 - **Python**: antes de activar una carga, comprobar `python -m pip show pyodbc` y `python -c "import pyodbc; print(pyodbc.drivers())"`; ODBC Driver 18 para SQL Server debe estar instalado.
-- **Pruebas**: `npm.cmd run build`, `npm.cmd run docs:check`, `python -m py_compile apps/portal-api/scripts/tlv-import.py`; probar primero previsualizacion y una carga autorizada en base de pruebas.
+- **Pruebas**: `npm.cmd run build`, `npm.cmd run docs:check`, `python -m py_compile apps/portal-api/scripts/tlv-import.py`, `python -m unittest discover -s apps/portal-api/scripts/tests -p 'test_*.py' -v`; probar primero previsualización de Excel con 33/36/42 columnas y una carga autorizada en base de pruebas.
 - **Produccion**: nunca activar los registros de `TaskFlow` por el solo hecho de actualizar el codigo; el DBA debe revisar migraciones y permisos, aprobar respaldos y ventana de mantenimiento.
