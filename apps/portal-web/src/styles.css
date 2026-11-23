@@ -300,3 +300,12 @@ form label {font-size:.9375rem}form input {font-size:1rem;min-height:48px}
 .activation-page{min-height:100dvh;padding:clamp(1rem,5vw,4rem);display:grid;place-items:center;background:var(--bg,#f7f8fa)}.activation-page>.admin-panel{width:100%;max-width:42rem;min-width:0}.activation-page h1{font-size:clamp(1.75rem,4vw,2.5rem)}.activation-page p{line-height:1.65}.invitation-value{display:block;width:100%;box-sizing:border-box;min-width:0;margin:.5rem 0 1rem;padding:.85rem;border:1px solid var(--border,#d7dce5);border-radius:.6rem;font-size:1rem;background:var(--surface,#fff);color:inherit}.activation-page .admin-primary{display:inline-block;text-decoration:none}.activation-page label{display:block}
 
 @media print { body:has(.projection) .sidebar,body:has(.projection) .topbar{display:none!important}body:has(.projection) .portal-body{margin:0!important;width:100%}body:has(.projection) .workspace-main{max-width:none;padding:0}body:has(.projection) .portal{--surface:#fff;--text:#111;--sub:#555;--border:#ccc;background:#fff;color:#111} }
+
+/* Extension pages use the available workspace width, especially on operator laptops. */
+.workspace-main:has(iframe[title="Herramienta instalada"]) {
+  max-width: none;
+  padding: clamp(.75rem, 1.2vw, 1.25rem);
+}
+@media (max-width: 50rem) {
+  .workspace-main:has(iframe[title="Herramienta instalada"]) {padding: .75rem;}
+}
