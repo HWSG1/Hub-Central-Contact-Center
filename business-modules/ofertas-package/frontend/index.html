@@ -30,11 +30,15 @@ label{font-weight:700;color:#223653}label select,label input{font-weight:400;col
 .download-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .download-actions button svg{width:18px;height:18px;flex:0 0 18px}
 .download-actions button span{font-weight:800}
+
+.date-hint{font-size:12px;color:#52627b;margin:8px 0 10px;line-height:1.5}
+.date-field input{color:#182b48;font-size:14px;min-height:46px}
+@media(max-width:680px){.date-field{grid-column:1/-1}}
 </style></head><body>
 <h1>Buscador de ofertas y calculadoras</h1><p class="muted">Consulta las ofertas del cliente en todas sus bases y cuentas.</p><p id="error" class="error" role="alert" hidden></p><p id="loading" role="status">Conectando con el módulo…</p>
 <main id="app" hidden><section><h2>Ofertas del cliente</h2><form id="search" class="toolbar"><label>Buscar por<select id="field"><option value="dni">DNI</option><option value="codigo_cliente">Código IBS</option><option value="cuenta">Cuenta</option></select></label><label>Identificador<input id="value" maxlength="40" required autocomplete="off" placeholder="Incluye los ceros iniciales"></label><button class="primary">Buscar</button><button id="clear" type="button">Limpiar</button></form><p id="summary" class="muted"></p><div class="table"><table><thead><tr><th>Base / producto</th><th>Cliente / cuenta</th><th>Monto simulable (L)</th><th>Tasa</th><th>Acciones</th></tr></thead><tbody id="rows"></tbody></table></div><div class="actions"><button id="prev" hidden>Anterior</button><span id="page"></span><button id="next" hidden>Siguiente</button></div></section>
 <section id="detail" hidden><div class="heading"><h2 id="detail-title">Detalle</h2><button id="close">Cerrar</button></div><dl class="detail" id="fields"></dl></section>
-<div class="grid"><section><h2>Simular financiamiento</h2><label>Producto<select id="product"><option value="EXTRA">Extra</option><option value="INTRA">Intra</option><option value="CORTA_CUOTAS">Corta Cuotas</option></select></label><p id="selected" hidden></p><form id="calculate"><div class="inputs"><label>Monto (L)<input id="amount" type="number" min="0.01" max="10000000" step="0.01" required></label><label>Plazo<select id="months"></select></label><label id="rate-label">Tasa anual (%)<input id="rate" type="number" min="0" max="100" step="0.01" value="24"></label><label id="plan-label" hidden>Plan Intra<select id="plan"></select></label><label id="commission-label" hidden>Comisión (%)<input id="commission" type="number" min="0" max="50" step="0.01" value="4"></label><label id="mode-label" hidden>Cobro de comisión<select id="mode"><option value="FIRST">Primera cuota</option><option value="FINANCED">Financiada</option></select></label></div><p id="conditions" class="muted"></p><button class="primary">Calcular proyección</button></form><small>Verifica tasas y condiciones antes de compartirlas con el cliente.</small></section>
+<div class="grid"><section><h2>Simular financiamiento</h2><label>Producto<select id="product"><option value="EXTRA">Extra</option><option value="INTRA">Intra</option><option value="CORTA_CUOTAS">Corta Cuotas</option></select></label><p id="selected" hidden></p><form id="calculate"><div class="inputs"><label>Monto (L)<input id="amount" type="number" min="0.01" max="10000000" step="0.01" required></label><label>Plazo<select id="months"></select></label><label id="rate-label">Tasa anual (%)<input id="rate" type="number" min="0" max="100" step="0.01" value="24"></label><label id="plan-label" hidden>Plan Intra<select id="plan"></select></label><label id="commission-label" hidden>Comisión (%)<input id="commission" type="number" min="0" max="50" step="0.01" value="4"></label><label id="mode-label" hidden>Cobro de comisión<select id="mode"><option value="FIRST">Primera cuota</option><option value="FINANCED">Financiada</option></select></label><label class="date-field">Fecha de desembolso<input id="disbursement-date" type="date" required aria-label="Fecha de desembolso"></label><label class="date-field">Fecha de firma (opcional)<input id="signature-date" type="date" aria-label="Fecha de firma"></label></div><p class="date-hint">La fecha de desembolso aparecerá en las condiciones del PDF; la fecha de firma se mostrará en Formalización.</p><p id="conditions" class="muted"></p><button class="primary">Calcular proyección</button></form><small>Verifica tasas y condiciones antes de compartirlas con el cliente.</small></section>
 <section><div class="heading"><h2>Proyección de pagos</h2><div class="download-actions"><button type="button" id="export-pdf" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M7 14h2m-2 3h2m3-3h5m-5 3h5"/></svg><span>PDF</span></button><button type="button" id="export-excel" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h10l6 6v12H4z"/><path d="M14 3v6h6M8 12l5 7M13 12l-5 7"/></svg><span>Excel</span></button><button type="button" id="export-csv" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h10l6 6v14H4z"/><path d="M14 2v6h6M7 15h4m-4 3h4m3-3h3m-3 3h3"/></svg><span>CSV</span></button></div></div><p id="empty" class="muted">Selecciona una oferta o ingresa los parámetros para calcular.</p><div id="totals" class="totals"></div><div class="table"><table id="schedule" hidden><thead><tr><th>Mes</th><th>Cuota</th><th>Capital</th><th>Interés</th><th>Comisión</th><th>Saldo</th></tr></thead><tbody id="payments"></tbody></table></div></section></div></main>
 <script>
 const $=id=>document.getElementById(id);let sequence=0,pending=new Map(),config,page=0,lastSearch=null,result=null,selectedOffer=null;
@@ -83,78 +87,109 @@ const PDF_LOGO_JPEG='/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgU
 const pdfMoney=n=>'L '+safeAmount(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function exportPdf(){
  if(!result||!Array.isArray(result.schedule)||!result.schedule.length)return;
+ const disbursementDate=$('disbursement-date').value;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(disbursementDate)){ $('error').textContent='Selecciona la fecha de desembolso antes de exportar el PDF.';$('error').hidden=false;return; }
+ const signatureDate=$('signature-date').value||'________________';
  const encoder=new TextEncoder(),logo=Uint8Array.from(atob(PDF_LOGO_JPEG),x=>x.charCodeAt(0));
- const red='0.847 0.153 0.180',dark='0.29 0.29 0.29',muted='0.44 0.44 0.44';
+ const red='0.847 0.153 0.180',dark='0.24 0.27 0.33',muted='0.40 0.42 0.45',gray='0.78 0.78 0.78';
  const esc=pdfEsc;
- const txt=(x,y,size,t,bold=false,color=dark)=>`${color} rg BT /${bold?'F2':'F1'} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${esc(t??'')}) Tj ET\n`;
+ const txt=(x,y,size,t,bold=false,color=dark)=>`${color} rg BT /${bold?'F2':'F1'} ${size} Tf 1 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)} Tm (${esc(t??'')}) Tj ET\n`;
+ const approx=(t,size,bold=false)=>String(t).length*size*(bold?0.55:0.51);
+ const centered=(a,b,y,size,t,bold=false,color=dark)=>txt((a+b-approx(t,size,bold))/2,y,size,t,bold,color);
+ const right=(x,y,size,t,bold=false,color=dark)=>txt(x-approx(t,size,bold),y,size,t,bold,color);
  const rect=(x,y,w,h,color)=>`${color} rg ${x} ${y} ${w} ${h} re f\n`;
- const stroke=(x,y,w,h,color='0.75 0.75 0.75')=>`${color} RG 0.6 w ${x} ${y} ${w} ${h} re S\n`;
- const line=(x1,y1,x2,y2,color='0.72 0.72 0.72')=>`${color} RG 0.8 w ${x1} ${y1} m ${x2} ${y2} l S\n`;
+ const border=(x,y,w,h,color=gray)=>`${color} RG 0.65 w ${x} ${y} ${w} ${h} re S\n`;
+ const line=(x1,y1,x2,y2,color=gray)=>`${color} RG 0.65 w ${x1} ${y1} m ${x2} ${y2} l S\n`;
  const section=(title,top,height)=>{
   let v=rect(43,top-height,526,height,'0.988 0.988 0.988');
-  v+=stroke(43,top-height,526,height);v+=rect(43,top-height,4,height,red);
-  v+=txt(57,top-19,10.5,title,true,red);v+=line(57,top-26,553,top-26);
+  v+=border(43,top-height,526,height);
+  v+=txt(55,top-17,11,title,true,red);
+  v+=line(55,top-23,557,top-23);
   return v;
  };
- const c=(x,y,label,value,width=38)=>{
-  const safe=String(value==null||value===''?'________________':value);
-  const max=Math.max(5,Math.floor(width));
-  return txt(x,y,8,label,true,muted)+txt(x,y-15,9.2,safe.slice(0,max),true,dark)+(safe.length>max?txt(x,y-27,8.8,safe.slice(max,max*2),false,dark):'');
+ const field=(x,y,label,value,maxWidth=220)=>{
+  let v=txt(x,y,8,label,true,muted);
+  const raw=String(value==null||value===''?'________________':value);
+  const limit=Math.max(9,Math.floor(maxWidth/5.2));
+  let first=raw.length>limit?raw.slice(0,limit).replace(/\s+\S*$/,''):raw;
+  if(!first)first=raw.slice(0,limit);
+  v+=txt(x,y-17,9.5,first,true);
+  if(first.length<raw.length)v+=txt(x,y-29,9.5,raw.slice(first.length).trim().slice(0,limit),true);
+  v+=line(x,y-34,x+maxWidth,y-34,'0.68 0.68 0.68');
+  return v;
  };
  const productName=String(result.product||$('product').value).replaceAll('_',' ');
  const name=String(selectedOffer?.nombre_cliente||'').trim();
  const card=String(selectedOffer?.oferta||'').trim();
- const financed=pdfMoney(result.amount),months=String(result.months),annualRate=String(result.annualRate)+'%',monthlyRate=(Number(result.annualRate)/12).toFixed(2)+'%';
- const signatureDate='________________'; // no inventar la fecha de firma
- const firstRows=result.schedule.slice(0,24),otherRows=[];
- for(let i=24;i<result.schedule.length;i+=37)otherRows.push(result.schedule.slice(i,i+37));
- const chunks=[firstRows,...otherRows];
- const streams=[];
- chunks.forEach((chunk,pageIndex)=>{
-  const first=pageIndex===0;
-  let v=rect(42,716,528,47,red);
-  v+=txt(57,736,14,'TABLA DE AMORTIZACIÓN ('+productName+')',true,'1 1 1');
-  v+='q 120 0 0 30 432 726 cm /Im1 Do Q\n';
-  let tableTop;
-  if(first){
-   v+=section('INFORMACIÓN DEL CLIENTE',703,72);
-   v+=c(59,657,'Nombre del cliente:',name||' ',39);
-   v+=c(322,657,'Tipo de tarjeta:',card||' ',36);
-   v+=section('CONDICIONES DEL FINANCIAMIENTO',619,131);
-   v+=c(59,575,'Fecha Desembolso:','',25);
-   v+=c(322,575,'Monto a Financiar:',financed,25);
-   v+=c(59,535,'Interés Anual (%):',annualRate,25);
-   v+=c(220,535,'Interés Mensual (%):',monthlyRate,20);
-   v+=c(391,535,'Comisión por desembolso:',pdfMoney(result.commission),21);
-   v+=c(59,503,'Plazo (meses):',months,25);
-   v+=c(220,503,'SSD:',result.product==='EXTRA'?pdfMoney(result.ssd):'No aplica',21);
-   v+=c(391,503,'Cuota Mensual Nivelada:',pdfMoney(result.regularPayment),20);
-   tableTop=474;
-  }else{v+=txt(45,690,9,'CONTINUACIÓN DE LA PROYECCIÓN DE PAGOS',true,red);tableTop=672;}
-  v+=txt(54,tableTop,10.5,'PROYECCIÓN DE PAGOS',true,red);
-  const headY=tableTop-25;
-  v+=rect(43,headY-6,526,21,red);
-  const coords=[57,101,215,328,443],headers=['Mes','Cuota','Capital','Interés','Saldo'];
-  headers.forEach((h,j)=>v+=txt(coords[j],headY+1,8.5,h,true,'1 1 1'));
-  const rowHeight=12;
-  chunk.forEach((row,ri)=>{
-   const yy=headY-22-ri*rowHeight;
-   if(ri%2===1)v+=rect(43,yy-3,526,12,'0.984 0.984 0.984');
-   v+=txt(coords[0],yy,8,row.month,true,dark);
-   [row.payment,row.principal,row.interest,row.balance].forEach((value,j)=>v+=txt(coords[j+1],yy,8,pdfMoney(value),false,dark));
-   v+=line(43,yy-5,569,yy-5,'0.84 0.84 0.84');
-  });
-  const tableBottom=headY-22-chunk.length*rowHeight-7;
-  if(pageIndex===chunks.length-1){
-   let firmTop=Math.min(tableBottom-12,111); // última página conserva firma debajo de los pagos
-   firmTop=Math.max(firmTop,71);
-   v+=section('FORMALIZACIÓN',firmTop+32,69);
-   v+=c(59,firmTop+1,'Fecha de Firma:',signatureDate,24);
-   v+=line(334,firmTop-13,527,firmTop-13,dark);
-   v+=txt(337,firmTop-28,9,'Firma del Cliente',true,muted);
+ const financed=pdfMoney(result.amount),months=String(result.months);
+ const annualRate=Number(result.annualRate).toFixed(2)+'%';
+ const monthlyRate=(Number(result.annualRate)/12).toFixed(2)+'%';
+ const all=result.schedule;
+ const segments=[];
+ if(all.length<=18)segments.push(all);
+ else{
+  segments.push(all.slice(0,14));
+  let index=14;
+  while(index<all.length){
+   const left=all.length-index;
+   const count=left<=26?left:(left<=54?left-26:28);
+   segments.push(all.slice(index,index+count));index+=count;
   }
-  v+=txt(43,26,7,'Simulación informativa. Verifica tasas y condiciones antes de compartirlas con el cliente.',false,muted);
-  v+=txt(500,26,7,'Página '+(pageIndex+1)+' de '+chunks.length,false,muted);
+ }
+ const tableColumns=[43,110,233,352,467,569];
+ const headers=['Mes','Cuota','Capital','Interés','Saldo'];
+ const streams=[];
+ segments.forEach((rows,pageIndex)=>{
+  const first=pageIndex===0, last=pageIndex===segments.length-1;
+  let v='';
+  let titleY,headTop,firstBaseline,rowHeight;
+  if(first){
+   v+=rect(43,716,526,43,red);
+   v+=txt(57,731,13.5,'TABLA DE AMORTIZACIÓN ('+productName+')',true,'1 1 1');
+   v+='q 121 0 0 30 431 722 cm /Im1 Do Q\n';
+   v+=section('INFORMACIÓN DEL CLIENTE',703,93);
+   v+=field(55,659,'Nombre del cliente:',name,243);
+   v+=field(316,659,'Tipo de tarjeta:',card,239);
+   v+=section('CONDICIONES DEL FINANCIAMIENTO',598,160);
+   v+=field(55,565,'Fecha Desembolso:',disbursementDate,243);
+   v+=field(316,565,'Monto a Financiar:',financed,239);
+   v+=field(55,520,'Interés Anual (%):',annualRate,150);
+   v+=field(217,520,'Interés Mensual (%):',monthlyRate,150);
+   v+=field(379,520,'Comisión por desembolso:',pdfMoney(result.commission),176);
+   v+=field(55,475,'Plazo (meses):',months,150);
+   v+=field(217,475,'Seguro Saldo de Deuda (SSD):',result.product==='EXTRA'?pdfMoney(result.ssd):'No aplica',150);
+   v+=field(379,475,'Cuota Mensual Nivelada:',pdfMoney(result.regularPayment),176);
+   titleY=427;headTop=395;
+   rowHeight=last?13.3:19.0;
+  }else{
+   titleY=741;headTop=709;
+   rowHeight=last?Math.min(22,Math.max(15,Math.floor(440/Math.max(1,rows.length-1)))):19;
+  }
+  v+=txt(55,titleY,11,'PROYECCIÓN DE PAGOS',true,red);
+  v+=line(55,titleY-6,557,titleY-6,'0.78 0.78 0.78');
+  v+=rect(43,headTop-21,526,24,red);
+  headers.forEach((heading,i)=>v+=centered(tableColumns[i],tableColumns[i+1],headTop-12,9,heading,true,'1 1 1'));
+  firstBaseline=headTop-37;
+  rows.forEach((row,index)=>{
+   const baseline=firstBaseline-index*rowHeight;
+   if(index%2)v+=rect(43,baseline-6,526,rowHeight,'0.975 0.975 0.975');
+   v+=centered(tableColumns[0],tableColumns[1],baseline,8.3,String(row.month),true,dark);
+   [row.payment,row.principal,row.interest,row.balance].forEach((number,column)=>v+=right(tableColumns[column+2]-10,baseline,8.6,pdfMoney(number),false,dark));
+   v+=line(43,baseline-7,569,baseline-7,'0.84 0.84 0.84');
+  });
+  const lastRowBottom=firstBaseline-(rows.length-1)*rowHeight-9;
+  if(last){
+   const formalTop=Math.min(195,lastRowBottom-14);
+   const finalTop=Math.max(113,formalTop);
+   v+=section('FORMALIZACIÓN',finalTop,76);
+   v+=txt(55,finalTop-37,8,'Fecha de Firma:',true,muted);
+   v+=txt(55,finalTop-55,9.5,signatureDate,true);
+   v+=line(55,finalTop-60,245,finalTop-60);
+   v+=line(333,finalTop-55,535,finalTop-55,dark);
+   v+=txt(357,finalTop-69,8.5,'Firma del Cliente',true,muted);
+  }
+  v+=txt(43,20,7,'Simulación informativa. Verifica tasas y condiciones antes de compartirlas con el cliente.',false,muted);
+  v+=right(565,20,7,'Página '+(pageIndex+1)+' de '+segments.length,false,muted);
   streams.push(v);
  });
  const objects=[null,'<< /Type /Catalog /Pages 2 0 R >>',null,
