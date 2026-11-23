@@ -17,7 +17,7 @@ export function validateContracts(manifest:PackageManifest,migration:Migration,q
  for(const table of migration.tables){const key=table.name.toLowerCase();if(tables.has(key))throw Error('Tabla duplicada.');const names=table.columns.map(c=>c.name.toLowerCase());if(new Set(names).size!==names.length||names.some(n=>['id','activo','cargado_en'].includes(n)))throw Error('Columna duplicada o reservada.');const fields=new Set([...names,'id','activo','cargado_en']);tables.set(key,fields);for(const index of table.indexes)if(index.some(c=>!fields.has(c.toLowerCase())))throw Error('Índice inválido.');}
  for(const query of Object.values(queries)){
  const fields=tables.get(query.table.toLowerCase());if(!fields)throw Error('Consulta fuera del esquema declarado.');
- if('kind' in query&&query.kind==='insert'){
+ if(!('filters' in query)){
   if([...query.columns,query.actorColumn,query.uniqueBy].some(c=>!fields.has(c.toLowerCase()))||!query.columns.includes(query.uniqueBy)||query.columns.includes(query.actorColumn)||new Set(query.columns.map(c=>c.toLowerCase())).size!==query.columns.length)throw Error('Inserción fuera del esquema declarado.');
  }else{
   if([...query.columns,...query.filters.map(f=>f.column),...(query.scope?[query.actorColumn??'',query.dateColumn??'']:[])].some(c=>!fields.has(c.toLowerCase())))throw Error('Consulta fuera del esquema declarado.');
