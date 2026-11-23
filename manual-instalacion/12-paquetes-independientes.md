@@ -4,7 +4,7 @@
 
 El ZIP **hub-package-v2** contiene código real: `frontend/index.html` autocontenido, `backend/main.mjs` compilado con sus dependencias, `backend/queries.json`, `migrations/001.json`, `manifest.json` y `signature.txt`. No depende del registro de módulos incluidos ni necesita recompilar Angular/Hub por cada módulo nuevo.
 
-Las migraciones son instrucciones declarativas de tablas, columnas e índices que el instalador traduce a SQL Server. No son SQL arbitrario. Esta primera versión permite consultas de lectura y lógica de cálculo. No admite escrituras de negocio, joins, cambios destructivos, actualización/reemplazo de una versión instalada, desinstalación, dependencias npm instaladas en el servidor ni assets externos. Esas capacidades requieren ampliar el contrato; no deben simularse en el paquete.
+Las migraciones son instrucciones declarativas de tablas, columnas e índices que el instalador traduce a SQL Server. No son SQL arbitrario. Esta primera versión permite consultas de lectura y lógica de cálculo. No admite escrituras de negocio, joins, cambios destructivos de esquema, desinstalación, dependencias npm instaladas en el servidor ni assets externos. Las actualizaciones firmadas de versión pueden reemplazar frontend y backend sin migrar tablas ni modificar contratos de consultas/operaciones; los cambios de SQL siguen requiriendo una migración controlada del Hub. Esas capacidades requieren ampliar el contrato; no deben simularse en el paquete.
 
 ## Preparación inicial (una vez por entorno)
 
@@ -84,3 +84,11 @@ Los fallos de instalación se registran como FAILURE sin contenido sensible. Si 
 Si la terminal muestra `EBUSY ... rmdir ... hub-module-*`, el proceso del módulo todavía retenía su carpeta temporal durante la limpieza. No depende de la ubicación del ZIP. El ejecutor espera ahora el evento de cierre del proceso y sus canales antes de eliminar la carpeta, con reintentos acotados por bloqueos transitorios de Windows.
 
 Después de actualizar el código, detener la API, ejecutar `npm.cmd run build:api` y volver a iniciar con `npm.cmd run start:api`. Reintentar el mismo ZIP desde el asistente. No eliminar tablas ni cambiar permisos SQL para corregir este error. La comprobación de salud ocurre antes de crear las tablas del paquete y cualquier fallo en la transacción revierte la instalación.
+
+## Actualizaciones de código firmado (Ofertas TLV 1.3.3)
+
+La corrección de la matriz de TC TITULAR toma el valor visual de **MONTO** de la columna SQL **LIMITE**. Se conserva el encabezado del detalle y se evita sustituir el dato por el valor de la columna MONTO, destinada a otras bases.
+
+Para actualizar desde 1.3.2 se necesita una versión del Hub que permita actualizaciones firmadas de backend, conservando exactamente el contrato SQL de `backend/queries.json` y `migrations/001.json`. El instalador vuelve a validar la firma Ed25519, editor autorizado, versiones y salud del backend en sandbox, sin ejecutar DDL ni reemplazar registros de ofertas. El nuevo paquete requiere una firma emitida por el editor autorizado; nunca se instala un ZIP modificado manualmente sin re-firmar.
+
+En producción, mantener el control de cambios y realizar primero una prueba en QA con datos sintéticos. Para paquetes de desarrollo, registrar la clave pública del editor de manera controlada y conservar las claves anteriores.

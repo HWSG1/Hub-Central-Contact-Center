@@ -26,7 +26,7 @@ export const detailRules = {
    "greaterThanOne": false
   },
   {
-   "key": "MONTO",
+   "key": "LIMITE",
    "label": "MONTO",
    "aol": false,
    "greaterThanOne": false

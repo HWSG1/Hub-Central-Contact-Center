@@ -53,6 +53,17 @@ test('TLV 010: la API explica migracion faltante y ejecuta instalacion controlad
  assert.doesNotMatch(contracts,/sqlStatement|arbitrarySql|rawSql/);
 });
 
+test('upgrade firmado: backend permitido solo si consultas y migracion SQL son identicas',()=>{
+ const service=read('apps/portal-api/src/admin/admin.service.ts');
+ assert.ok(service.includes("for(const name of ['backend/queries.json','migrations/001.json'])"));
+ assert.ok(service.includes("previous.files['backend/main.mjs']!==manifest.files['backend/main.mjs']"));
+ assert.ok(service.includes("changeType='BACKEND_UPGRADE'"));
+ assert.ok(service.includes("previous.publisher!==manifest.publisher"));
+ assert.ok(service.includes("previous.operations.join('|')!==manifest.operations.join('|')"));
+ assert.match(service,/executeBackend\(pkg\.files\['backend\/main\.mjs'\],'health'/);
+ assert.match(service,/const newer=after\.findIndex/);
+});
+
 test('TLV import: SQL_AUTH=sql utiliza credenciales solo del entorno y permite Windows',()=>{
  const script=read('apps/portal-api/scripts/tlv-import.py');
  assert.ok(script.includes("os.environ.get('SQL_AUTH'"));

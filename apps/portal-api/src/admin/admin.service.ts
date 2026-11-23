@@ -38,17 +38,17 @@ export class AdminService {
      JOIN core.module_installations i ON i.version_id=v.id
      JOIN core.module_packages p ON p.version_id=v.id
      WHERE m.code=@code ORDER BY i.created_at DESC,i.id DESC`,{code:manifest.id})).recordset[0];
-   // La migracion 010 es necesaria SOLO para una instalacion nueva de TLV.
-   // Actualizar un modulo ya instalado requiere el mismo backend, consultas y
-   // esquema de tablas; el cambio permitido es exclusivamente frontend.
-   // No se debe ejecutar DDL sobre una base productiva por un cambio visual.
+   // La migracion 010 solo se requiere en instalaciones nuevas de TLV.
+   // Las actualizaciones firmadas pueden renovar el frontend y el backend
+   // validado en sandbox, pero nunca cambiar consultas ni esquema desde ZIP.
+   // No se ejecuta DDL durante una actualizacion de modulo.
    if(manifest.id==='OFERTAS_TLV'&&!existing){
     const tlv=(await q<{ready:number}>(
      "SELECT CASE WHEN OBJECT_ID(N'core.prepare_tlv_auditoria_v1',N'P') IS NULL THEN 0 ELSE 1 END AS ready"
     )).recordset[0];
     if(!tlv?.ready)throw new ConflictException('Falta la actualización 010 del Hub para preparar automáticamente la auditoría TLV. Solicita revisión del DBA.');
    }
-   let changeType:'NEW'|'FRONTEND_UPGRADE'='NEW';
+   let changeType:'NEW'|'FRONTEND_UPGRADE'|'BACKEND_UPGRADE'='NEW';
    if(existing){
     upgrade=true;wasPublished=existing.state==='PUBLISHED';changeType='FRONTEND_UPGRADE';
     const previous=JSON.parse(String(existing.manifest)) as typeof manifest;
@@ -60,10 +60,12 @@ export class AdminService {
      throw new ConflictException('Los contratos de identidad del módulo no pueden cambiar en una actualización.');
     if(previous.operations.join('|')!==manifest.operations.join('|'))
      throw new ConflictException('Las operaciones del módulo cambiaron. Esta actualización solo permite cambios visuales.');
-    for(const name of ['backend/main.mjs','backend/queries.json','migrations/001.json']){
+    // Renovar codigo firmado sin permitir cambios en las consultas SQL ni en tablas.
+    for(const name of ['backend/queries.json','migrations/001.json']){
      if(previous.files[name]!==manifest.files[name])
-      throw new ConflictException('La actualización solo permite cambiar la interfaz. No se modificarán tablas ni servicios.');
+      throw new ConflictException('La actualización del módulo no permite modificar las consultas ni la estructura SQL.');
     }
+    if(previous.files['backend/main.mjs']!==manifest.files['backend/main.mjs'])changeType='BACKEND_UPGRADE';
    }
    const health=await executeBackend(pkg.files['backend/main.mjs'],'health',{},async()=>{throw Error('La comprobación inicial no accede a SQL.');});
    if(!health||typeof health!=='object'||(health as {ok?:boolean}).ok!==true)throw new ConflictException('La comprobación inicial del backend no fue satisfactoria.');
