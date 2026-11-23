@@ -64,6 +64,11 @@ export class AdminService {
      await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
      await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
     }
+    // Contrato de instalacion preaprobado: TLV prepara auditoria sin aceptar
+    // instrucciones SQL provenientes del paquete ZIP. Se ejecuta en la misma
+    // transaccion que el alta/actualizacion del modulo (rollback ante fallo).
+    if(manifest.id==='OFERTAS_TLV')
+     await q('EXEC core.prepare_tlv_auditoria_v1;');
     await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:existing?.module_id??id,version:manifest.version,manifest:JSON.stringify(manifest),hash:pkg.sha256});
     await q('INSERT core.module_packages(version_id,archive) VALUES(@version,@archive)',{version:versionId,archive:pkg.bytes});
     const newState=existing?.state==='PUBLISHED'?'PUBLISHED':existing?.state==='DISABLED'?'DISABLED':'VALIDATED';
