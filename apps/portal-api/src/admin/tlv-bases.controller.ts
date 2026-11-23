@@ -1,6 +1,6 @@
 import {BadRequestException,ConflictException,Controller,ForbiddenException,Get,Headers,Post,Req,ServiceUnavailableException} from '@nestjs/common';
 import {spawn} from 'node:child_process';
-import {randomUUID,createHash} from 'node:crypto';
+import {createHash} from 'node:crypto';
 import {mkdtemp,writeFile,rm,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve,basename,extname} from 'node:path';
@@ -102,7 +102,7 @@ export class TlvBasesController {
   }
   try{
    directory=await mkdtemp(join(tmpdir(),'tlv-import-'));
-   const path=join(directory,randomUUID()+extname(name).toLowerCase());
+   const path=join(directory,name);
    await writeFile(path,bytes,{flag:'wx',mode:0o600});
    bytes.fill(0); // No mantener copias innecesarias de datos personales.
    await stat(SCRIPT).catch(()=>{throw new ServiceUnavailableException('Falta el importador TLV del servidor. Actualiza la API desde GitHub.');});
