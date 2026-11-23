@@ -29,7 +29,7 @@ export function compileInsert(code:string,queries:Queries,name:string,value:unkn
  const params:Record<string,unknown>={actor};const insertColumns:string[]=[];const values:string[]=[];
  for(let i=0;i<query.columns.length;i++){
   const c=query.columns[i];const val=input[c];
-  if(typeof val!=='string'||val.length===0||val.length>300||/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/.test(val))throw Error('Valor no admitido.');
+  if(typeof val!=='string'||val.length===0||val.length>300||/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(val))throw Error('Valor no admitido.');
   params['p'+i]=val;insertColumns.push('['+c+']');values.push('@p'+i);
  }
  const uniqueIndex=query.columns.indexOf(query.uniqueBy);
