@@ -92,3 +92,25 @@ La corrección de la matriz de TC TITULAR toma el valor visual de **MONTO** de l
 Para actualizar desde 1.3.2 se necesita una versión del Hub que permita actualizaciones firmadas de backend, conservando exactamente el contrato SQL de `backend/queries.json` y `migrations/001.json`. El instalador vuelve a validar la firma Ed25519, editor autorizado, versiones y salud del backend en sandbox, sin ejecutar DDL ni reemplazar registros de ofertas. El nuevo paquete requiere una firma emitida por el editor autorizado; nunca se instala un ZIP modificado manualmente sin re-firmar.
 
 En producción, mantener el control de cambios y realizar primero una prueba en QA con datos sintéticos. Para paquetes de desarrollo, registrar la clave pública del editor de manera controlada y conservar las claves anteriores.
+
+
+## Extensión controlada para el módulo TV_DESEMBOLSOS (migración 011)
+
+La nueva versión del Hub admite, además de las consultas SELECT originales, la declaración estricta `kind: "insert"` con tabla, columnas, campo actor del servidor y unicidad lógica por certificado. Este contrato es **append-only**; no admite UPDATE, DELETE ni SQL arbitrario enviado desde un ZIP.
+
+El instalador valida que los campos de escritura pertenezcan a las tablas declaradas; en instalaciones nuevas concede `INSERT` únicamente sobre el objeto correspondiente mediante `core.grant_package_append` (migración 011). La inserción se parametriza desde el servidor, incorpora `req.user.id` y evita duplicados activos con `UPDLOCK,HOLDLOCK`. Los demás módulos, incluidos Ofertas TLV, mantienen consultas de lectura sin ampliar sus concesiones SQL. Las actualizaciones que cambien contratos SQL de un módulo ya instalado siguen sin permitirse automáticamente.
+
+Las consultas con `scope: "actor_month"` añaden obligatoriamente filtros de identidad desde sesión y período mensual con límite exclusivo del mes siguiente. El cliente no puede seleccionar otro actor. Los permisos `TV_DESEMBOLSOS.USE`, sesión vigente, controles MFA del Hub, CSRF y revalidación de publicación siguen siendo obligatorios.
+
+### Instalación operativa
+
+1. Obtener una versión aprobada del Hub que incorpore la migración 011 y los cambios al broker/worker; instalar dependencias y compilar mediante `npm ci`, `npm test`, `npm run build`, `npm run docs:check`.
+2. Un DBA revisa y aplica `manual-instalacion/sql/Instalar-Actualizar-Hub.sql` con servidor/base verificados, `@Apply=0` para revisar primero y posteriormente `@Apply=1` en el entorno autorizado. No editar las migraciones 001–010.
+3. Empaquetar y **firmar** con la clave privada Ed25519 del editor autorizado: `npm run modules:pack -- business-modules/tv-desembolsos RUTA_PRIVADA_EDITOR business-modules/packages/tv-desembolsos-1.0.0.zip`. No usar una firma simulada.
+4. Validar clave pública de confianza en `MODULE_TRUST_FILE` y Node 26 en `MODULE_NODE`. En QA autorizar solo claves del entorno QA.
+5. En la interfaz: **Centro de módulos → Importar módulo → Analizar → Instalar → Publicar**. Revisar tabla `mod_tv_desembolsos.certificados`, permiso `TV_DESEMBOLSOS.USE`, y asignarlo mediante la administración de roles.
+6. Validar captura de los cuatro campos y consulta por mes, el aislamiento entre operadores, el rechazo de duplicados y la auditoría; documentar resultados antes de producción.
+
+La importación histórica de los **16,538 registros de TV_Certificados** es opcional y externa al ZIP. No utilizar TV_Ventas. Véase `business-modules/tv-desembolsos/README.md` para los detalles del CSV, sus valores incompletos y mapeo administrativo de usuarios históricos.
+
+**Importante:** no se ha ejecutado esta migración contra SQL Server real en esta entrega. La instalación completa requiere pruebas y revisión por DBA/Seguridad de la Información.
