@@ -84,3 +84,7 @@ Interfaz y backend provenientes del ZIP firmado, host genérico, ejecutor separa
 - Se espera el cierre del proceso y sus canales antes de resolver la ejecución; eliminación con reintentos acotados para bloqueos transitorios.
 - No cambia el ZIP, sus firmas, las migraciones ni los permisos de instalación. Requiere recompilar y reiniciar la API.
 - Regresión: ejecuciones reales consecutivas verifican respuesta y eliminación de cada carpeta temporal.
+
+
+## 2026-11-23 · TV_DESEMBOLSOS independiente
+Se elimina totalmente TV_Ventas del alcance del nuevo módulo. Se añade el registro directo de certificado, tipo de venta, tipo de desembolso y fecha; consulta mensual obligatoriamente acotada al operador. Migración aditiva 011 prepara concesión de INSERT sobre tabla declarada, sin SQL libre, actor de sesión y protección contra registro repetido. Se añade importador del histórico de TV_Certificados con modo previsualización sin SQL por defecto; los datos originales se mantienen fuera del ZIP y de GitHub. **Pruebas reales SQL, firma de editor autorizado y despliegue aún pendientes**. No se ejecutó ninguna operación productiva.
