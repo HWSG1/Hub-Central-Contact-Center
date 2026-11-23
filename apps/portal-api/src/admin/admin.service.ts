@@ -101,7 +101,7 @@ export class AdminService {
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
   const installed=(await this.db.query(`WITH versions AS (SELECT m.id,m.code,m.name,m.enabled,v.version,v.manifest,i.state,i.id AS installation_id,ROW_NUMBER() OVER(PARTITION BY m.id ORDER BY i.created_at DESC,i.id DESC) AS rn FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id) SELECT id,code,name,enabled,version,manifest,state,installation_id FROM versions WHERE rn=1 ORDER BY name`)).recordset;
-  const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'?[m]:[];}catch{return [];}});
+  const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'&&m.id===row.code&&m.permission===row.code+'.USE'?[{...m,route:'/extensions/'+row.code}]:[];}catch{return [];}});
   return {available:descriptor,modules:[...descriptors,...packages],installed};
  }
  async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;code?:string;reason:string}){
