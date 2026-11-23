@@ -1,0 +1,40 @@
+name: Validación del instalador TLV
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/portal-api/**'
+      - 'database/migrations/**'
+      - 'manual-instalacion/**'
+      - 'scripts/**'
+      - 'tests/security/**'
+      - '.github/workflows/tlv-installer-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validacion:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar Node 24.15
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: 'npm'
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias bloqueadas
+        run: npm ci
+      - name: Comprobar código y frontend
+        run: npm run build
+      - name: Ejecutar pruebas de seguridad
+        run: npm test
+      - name: Verificar sintaxis del importador Python
+        run: python -m py_compile apps/portal-api/scripts/tlv-import.py
