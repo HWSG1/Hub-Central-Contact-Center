@@ -277,7 +277,7 @@ def run(args):
         raise ValueError('Puerto SQL fuera de rango.')
     server_address = ('tcp:' + args.servidor + ',' + str(args.puerto)) if args.puerto else args.servidor
     conn = pyodbc.connect('DRIVER={' + args.driver + '};SERVER=' + server_address + ';DATABASE=' + args.base
-                          + ';Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate=
+                          + ';Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate='
                           + ('Yes;' if args.certificado_desarrollo else 'No;') + 'APP=TLV-Carga-Auditada;', timeout=25)
     c = conn.cursor()
     try:
