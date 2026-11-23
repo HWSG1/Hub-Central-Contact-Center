@@ -1,0 +1,68 @@
+{
+  "tables": [
+    {
+      "name": "certificados",
+      "columns": [
+        {
+          "name": "certificado",
+          "type": "varchar(40)",
+          "nullable": false
+        },
+        {
+          "name": "tipo_venta",
+          "type": "nvarchar(300)",
+          "nullable": false
+        },
+        {
+          "name": "tipo_desembolso",
+          "type": "nvarchar(300)",
+          "nullable": false
+        },
+        {
+          "name": "fecha_desembolso",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "registrado_por",
+          "type": "nvarchar(300)",
+          "nullable": false
+        },
+        {
+          "name": "correo_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "id_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "gestion_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "estado_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "observacion_origen",
+          "type": "nvarchar(2000)",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        [
+          "registrado_por",
+          "fecha_desembolso"
+        ],
+        [
+          "certificado"
+        ]
+      ]
+    }
+  ]
+}
