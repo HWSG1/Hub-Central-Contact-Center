@@ -515,3 +515,98 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
  .collapsed .sidebar .portal-brand {justify-content:flex-start;gap:10px;padding:0 6px}
  .collapsed .sidebar .bank-brand-label {display:block}
 }
+
+
+/* Barra superior y cabecera lateral alineadas en una sola línea divisoria. */
+.sidebar {padding-top:0}
+.sidebar-header {
+ box-sizing:border-box;
+ height:64px;
+ min-height:64px;
+ display:flex;
+ align-items:center;
+ gap:7px;
+ margin:0 -1rem 0;
+ padding:0 1rem;
+ border-bottom:1px solid var(--border);
+ flex-shrink:0;
+}
+.sidebar-header .portal-brand {
+ flex:1 1 auto;
+ display:flex;
+ align-items:center;
+ justify-content:flex-start;
+ gap:8px;
+ min-width:0;
+ min-height:0;
+ height:auto;
+ margin:0;
+ padding:0;
+ overflow:hidden;
+}
+.sidebar-header .bank-brand-full {width:87px;max-width:87px;max-height:36px}
+.sidebar-header .bank-brand-label {font-size:12px;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+.sidebar-header .bank-brand-label b {font-size:18px}
+.sidebar-collapse-btn {
+ flex:0 0 30px;
+ display:grid;
+ place-items:center;
+ width:30px;
+ height:32px;
+ color:var(--sub);
+ border:0;
+ background:transparent;
+ border-radius:7px;
+ cursor:pointer;
+}
+.sidebar-collapse-btn:hover,.sidebar-collapse-btn:focus-visible {color:var(--brand);background:color-mix(in srgb,var(--brand) 7%,transparent)}
+.sidebar-collapse-btn .hub-nav-icon {width:19px;height:19px;min-width:19px}
+.sidebar nav {padding-top:.55rem}
+.topbar {
+ height:64px;
+ min-height:64px;
+ padding-top:0;
+ padding-bottom:0;
+ flex-wrap:nowrap;
+}
+/* El botón superior continúa accesible cuando se contrae el lateral. */
+.collapsed .sidebar {padding-top:0}
+.collapsed .sidebar-header {
+ margin:0 -.75rem;
+ padding:0 .35rem;
+ justify-content:center;
+ gap:3px;
+}
+.collapsed .sidebar-header .portal-brand {flex:0 0 auto;min-width:0;margin:0;padding:0}
+.collapsed .sidebar-header .bank-brand-full {display:none}
+.collapsed .sidebar-header .bank-brand-icon {display:block;width:28px;height:28px;max-width:28px;max-height:28px}
+.collapsed .sidebar-header .bank-brand-label {display:none}
+.collapsed .sidebar-header .sidebar-collapse-btn {flex:0 0 28px;width:28px;height:30px}
+.collapsed .sidebar nav {margin-top:.35rem}
+@media (min-width:40.001rem) and (max-width:64rem) {
+ .sidebar,.collapsed .sidebar {padding-top:0}
+ .sidebar-header,.collapsed .sidebar-header {margin:0 -.75rem;padding:0 .35rem;justify-content:center;gap:3px}
+ .sidebar-header .bank-brand-full {display:none}
+ .sidebar-header .bank-brand-icon {display:block;width:28px;height:28px;max-width:28px;max-height:28px}
+ .sidebar-header .bank-brand-label {display:none}
+ .sidebar-header .portal-brand {flex:0 0 auto}
+ .sidebar-header .sidebar-collapse-btn {flex:0 0 28px;width:28px;height:30px}
+ .sidebar nav,.collapsed .sidebar nav {margin-top:.35rem}
+}
+@media (max-width:40rem) {
+ .sidebar,.collapsed .sidebar {padding-top:0}
+ .sidebar-header,.collapsed .sidebar-header {
+  margin:0 -1rem;
+  padding:0 1rem;
+  justify-content:space-between;
+  min-height:56px;
+  height:56px;
+  gap:8px;
+ }
+ .sidebar-header .portal-brand,.collapsed .sidebar-header .portal-brand {flex:1 1 auto;justify-content:flex-start}
+ .sidebar-header .bank-brand-full,.collapsed .sidebar-header .bank-brand-full {display:block;width:80px;max-width:80px}
+ .sidebar-header .bank-brand-icon,.collapsed .sidebar-header .bank-brand-icon {display:none}
+ .sidebar-header .bank-brand-label,.collapsed .sidebar-header .bank-brand-label {display:block}
+ .sidebar-header .sidebar-collapse-btn,.collapsed .sidebar-header .sidebar-collapse-btn {flex:0 0 32px;width:32px}
+ .topbar {min-height:56px;height:56px;padding:0 1rem;gap:.5rem}
+}
