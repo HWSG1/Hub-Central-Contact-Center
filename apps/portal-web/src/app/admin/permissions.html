@@ -1,0 +1,45 @@
+<div class="page-kicker">SEGURIDAD · MATRIZ RBAC</div>
+<div class="page-heading"><div><h1>Matriz de permisos</h1><p>Administra los permisos de cada rol, incluidos los incorporados por módulos nuevos.</p></div><a routerLink="/admin/roles" class="admin-secondary">Ver roles</a></div>
+<div class="admin-policy">Los permisos se obtienen del catálogo real del Hub. Sólo puedes conceder permisos que posees y no puedes editar los roles asignados a tu propia cuenta. Los cambios requieren un motivo y quedan auditados.</div>
+@if(error()){<p role="alert" class="error-message">{{error()}}</p>}
+@if(notice()){<p role="status" class="admin-notice">{{notice()}}</p>}
+@if(loading()){<p role="status">Cargando permisos…</p>}@else{
+<section class="admin-panel">
+ <div class="admin-card-title permission-toolbar">
+  <div><h2>Permisos por rol</h2><p class="admin-help">{{chosen().length}} permisos seleccionados</p></div>
+  <label class="admin-select-label">Rol
+   <select [value]="selectedId()" (change)="select($any($event.target).value)">
+    @for(r of roles();track r.id){<option [value]="r.id">{{r.name}} ({{r.code}})</option>}
+   </select>
+  </label>
+ </div>
+ @if(role();as r){
+  <div class="security-summary">
+   <span class="admin-status" [class.off]="!r.enabled">{{r.enabled?'Rol habilitado':'Rol deshabilitado'}}</span>
+   <strong>{{r.name}}</strong>
+   <span class="muted">{{r.description||'Sin descripción'}}</span>
+  </div>
+  @if(!editable(r)){<p class="admin-help">Este rol es de solo lectura para tu cuenta. No puedes modificar sus permisos.</p>}
+  <label class="search security-search"><input aria-label="Buscar permisos" placeholder="Buscar por código o módulo…" [value]="search()" (input)="search.set($any($event.target).value)"></label>
+  <div class="security-table-wrap">
+   <table class="security-table permission-table">
+    <thead><tr><th>Módulo</th><th>Permiso</th><th class="cell-center">Asignado</th></tr></thead>
+    <tbody>
+    @for(p of visiblePermissions();track p){
+     <tr><td><strong>{{moduleName(p)}}</strong></td><td><code>{{p}}</code></td>
+      <td class="cell-center"><input type="checkbox" [attr.aria-label]="'Conceder permiso '+p" [checked]="chosen().includes(p)" [disabled]="busy()||!editable(r)||!has(p)" (change)="toggle(p,$any($event.target).checked)"></td>
+     </tr>
+    }@empty{<tr><td colspan="3">No se encontraron permisos.</td></tr>}
+    </tbody>
+   </table>
+  </div>
+  @if(editable(r)){
+   <div class="admin-form security-save-bar">
+    <label for="permission-reason-page">Motivo de la actualización</label>
+    <textarea id="permission-reason-page" rows="2" maxlength="500" placeholder="Indica el motivo de los cambios (mínimo 5 caracteres)" [value]="reason()" (input)="reason.set($any($event.target).value)"></textarea>
+    <div class="admin-actions"><button type="button" class="admin-primary" [disabled]="busy()||reason().trim().length<5" (click)="save()">{{busy()?'Guardando…':'Guardar permisos'}}</button></div>
+   </div>
+  }
+ }
+</section>
+}
