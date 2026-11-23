@@ -112,6 +112,7 @@ export class TlvBasesController {
    const args=['--archivo',path,'--hoja','Consulta1'];
    if(!commit)args.push('--previsualizar');
    else args.push('--servidor',process.env.TLV_IMPORT_SQL_SERVER||config.SQL_SERVER,
+      '--puerto',String(config.SQL_PORT),
       '--base',config.SQL_DATABASE,'--modo','reemplazo-total','--confirmar','CAMBIAR_BASE',
       '--usuario-hub',req.user.id);
    if(commit&&config.NODE_ENV!=='production'&&config.SQL_TRUST_SERVER_CERTIFICATE==='true')
