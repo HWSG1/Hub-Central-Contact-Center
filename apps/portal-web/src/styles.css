@@ -448,3 +448,8 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
  .audit-filter-panel .admin-primary,.audit-filter-panel .admin-secondary {flex:1}
  .sidebar nav a .nav-text {white-space:normal}
 }
+
+/* Legibilidad de botones primarios en el inicio con tema claro. */
+.portal:not(.dark) .app-card .banner-link,
+.portal:not(.dark) .app-card .banner-link:visited {color:#fff;}
+.portal:not(.dark) .app-card .banner-link:hover {color:#fff;}
