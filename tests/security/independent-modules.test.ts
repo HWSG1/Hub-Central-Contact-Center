@@ -25,3 +25,12 @@ test('real worker denies network, filesystem outside package, subprocesses and i
  const result=await executeBackend(source,'health',{},async()=>[],node) as Record<string,string>;assert.equal(result.fs,'ERR_ACCESS_DENIED');assert.equal(result.net,'ERR_ACCESS_DENIED');assert.equal(result.child,'ERR_ACCESS_DENIED');assert(['absent','denied'].includes(result.secret));
 });
 test('worker terminates errors and refuses queries not declared by host',async()=>{await assert.rejects(executeBackend(strToU8('export const handle=()=>{throw Error("fail")}'),'health',{},async()=>[],node));await assert.rejects(executeBackend(strToU8('export const handle=(op,i,api)=>api.query("core.users",{})'),'search',{},async()=>{throw Error('denied');},node));});
+
+// Regression: returning a result must not race Windows process cwd cleanup.
+test('worker closes before removing its temporary working directory on repeated executions',async()=>{
+ const source=strToU8('export const handle=()=>({folder:process.cwd(),ok:true});');
+ for(let i=0;i<12;i++){
+  const result=await executeBackend(source,'health',{},async()=>[],node) as {folder:string;ok:boolean};
+  assert.equal(result.ok,true);assert.equal(existsSync(result.folder),false,result.folder);
+ }
+});

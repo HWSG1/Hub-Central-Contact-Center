@@ -1,7 +1,7 @@
 import {spawn} from 'node:child_process';
 import {mkdtemp,writeFile,rm,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,resolve,sep} from 'node:path';
+import {join,dirname,basename} from 'node:path';
 import {workerSource} from './worker.js';
 import {createInterface} from 'node:readline';
 let running=0;
@@ -14,20 +14,26 @@ export async function executeBackend(source:Uint8Array,operation:string,input:un
   return await new Promise<unknown>((accept,reject)=>{
    // Node >=26: without allow-net, all network access is denied. No inherited .env.
    const child=spawn(node,['--permission','--allow-fs-read='+folder,'--allow-fs-read='+runner,'--max-old-space-size=64',runner,backend],{env:{SystemRoot:process.env.SystemRoot??'',TEMP:folder,TMP:folder},cwd:folder,windowsHide:true,stdio:['pipe','pipe','pipe']});
-   let ended=false,bytes=0,count=0;const ids=new Set<number>();
-   const finish=(error?:Error,result?:unknown)=>{if(ended)return;ended=true;clearTimeout(timeout);child.kill();error?reject(error):accept(result);};
+   let ended=false,bytes=0,count=0;let outcome:{error?:Error;result?:unknown}|undefined;const ids=new Set<number>();
+   // On Windows the process retains its working directory until it has closed.
+   // Do not settle this promise (and enter cleanup) just after sending kill.
+   const finish=(error?:Error,result?:unknown)=>{if(ended)return;ended=true;outcome={error,result};clearTimeout(timeout);child.kill();};
    const timeout=setTimeout(()=>finish(Error('Tiempo del módulo agotado.')),10000);
    const lines=createInterface({input:child.stdout});
    child.stdout.on('data',chunk=>{bytes+=chunk.length;if(bytes>2*1024*1024)finish(Error('Respuesta excesiva.'));});
    child.stderr.on('data',chunk=>{bytes+=chunk.length;if(bytes>2*1024*1024)finish(Error('Salida excesiva.'));});
    lines.on('line',async line=>{if(ended)return;try{const message=JSON.parse(line);if(message.type==='result'){finish(undefined,message.result);return;}if(message.type!=='query'||++count>8||!Number.isSafeInteger(message.id)||ids.has(message.id)||typeof message.name!=='string')throw Error('Protocolo inválido.');ids.add(message.id);const result=await query(message.name,message.params);if(!ended)child.stdin.write(JSON.stringify({id:message.id,result})+'\n');}catch{finish(Error('No se pudo ejecutar el módulo.'));}});
    child.on('error',()=>finish(Error('Configura MODULE_NODE con Node.js 26 o superior.')));
-   child.on('exit',()=>finish(Error('El servicio del módulo terminó sin respuesta.')));
+   child.on('close',()=>{
+    clearTimeout(timeout);ended=true;lines.close();
+    if(!outcome)outcome={error:Error('El servicio del módulo terminó sin respuesta.')};
+    outcome.error?reject(outcome.error):accept(outcome.result);
+   });
    child.stdin.on('error',()=>finish(Error('El ejecutor no está disponible.')));
    child.stdin.write(JSON.stringify({operation,input})+'\n');
   });
  }finally{
   running--;
-  if(folder){const actual=await realpath(folder);const parent=await realpath(tmpdir());if(actual.startsWith(parent+sep)&&actual===resolve(folder))await rm(actual,{recursive:true,force:true});}
+  if(folder){const actual=await realpath(folder);const parent=await realpath(tmpdir());if(dirname(actual)===parent&&basename(actual)===basename(folder))await rm(actual,{recursive:true,force:true,maxRetries:6,retryDelay:100});}
  }
 }

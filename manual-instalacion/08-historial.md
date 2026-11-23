@@ -78,3 +78,9 @@ Archivo ZIP entregable validado contra el importador real. Centro de módulos li
 
 ## 2026-11-21 — Paquetes completos hub-package-v2
 Interfaz y backend provenientes del ZIP firmado, host genérico, ejecutor separado y broker de consultas. Migración 008 prepara una vez el instalador de tablas declarativas. Ofertas TLV independiente conserva columnas y reglas de detalle, usa mod_ofertas_tlv.base_tlv y no altera el módulo anterior. Empaquetador reutilizable y guía 12. SQL real pendiente por conexión local no disponible.
+
+## 2026-11-21 · Corrección de limpieza del ejecutor en Windows
+- El error EBUSY reportado al instalar correspondía a borrar la carpeta temporal antes del cierre del proceso Node del módulo.
+- Se espera el cierre del proceso y sus canales antes de resolver la ejecución; eliminación con reintentos acotados para bloqueos transitorios.
+- No cambia el ZIP, sus firmas, las migraciones ni los permisos de instalación. Requiere recompilar y reiniciar la API.
+- Regresión: ejecuciones reales consecutivas verifican respuesta y eliminación de cada carpeta temporal.

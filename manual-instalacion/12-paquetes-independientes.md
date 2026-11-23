@@ -77,4 +77,10 @@ Los fallos de instalación se registran como FAILURE sin contenido sensible. Si 
 
 ## Validación
 
-Se probaron firmas/alteraciones, contratos, consultas, permisos del proceso y ejecución real del backend extraído del ZIP con datos sintéticos. Se verificó sintaxis de 008 y del consolidado con parser SQL Server 2022. La conexión SQL local no respondió (258): no se aplicó 008 ni se confirmó todavía el flujo completo con SQL y sesión real.
+117 pruebas aprobadas y compilación web/API correcta. Se probaron firmas/alteraciones, contratos, transacción de instalación/rollback, consultas, permisos del proceso y ejecución real del backend extraído del ZIP con datos sintéticos. La prueba de navegador verificó búsqueda, detalle y cálculo (primera cuota de 248 en el caso de prueba), sin errores JavaScript ni desbordamiento horizontal a 390 px. Se verificó sintaxis de 008 y del consolidado con parser SQL Server 2022. La conexión SQL local no respondió (258): no se aplicó 008 ni se confirmó todavía el flujo completo con SQL y sesión real.
+
+## Error EBUSY al importar en Windows
+
+Si la terminal muestra `EBUSY ... rmdir ... hub-module-*`, el proceso del módulo todavía retenía su carpeta temporal durante la limpieza. No depende de la ubicación del ZIP. El ejecutor espera ahora el evento de cierre del proceso y sus canales antes de eliminar la carpeta, con reintentos acotados por bloqueos transitorios de Windows.
+
+Después de actualizar el código, detener la API, ejecutar `npm.cmd run build:api` y volver a iniciar con `npm.cmd run start:api`. Reintentar el mismo ZIP desde el asistente. No eliminar tablas ni cambiar permisos SQL para corregir este error. La comprobación de salud ocurre antes de crear las tablas del paquete y cualquier fallo en la transacción revierte la instalación.
