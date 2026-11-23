@@ -15,6 +15,14 @@ function fixture(){
  return {files,manifest,zip:()=>Buffer.from(zipSync(files)).toString('base64')};
 }
 test('full package contains and authenticates code, interface, queries and table definitions',()=>{const f=fixture(),p=inspectFullPackage(f.zip(),trust);assert.equal(p.manifest.route,'/extensions/TEST_MOD');assert.equal(Object.keys(p.files).length,6);assert.equal(p.migration.tables[0].name,'offers');});
+test('trusted publisher key rotation validates old and new Ed25519 keys without replacing old trust',()=>{
+ const alternate=generateKeyPairSync('ed25519');
+ const publicNew=String(alternate.publicKey.export({type:'spki',format:'pem'}));
+ const f=fixture();
+ const rotated={test:[trust.test,publicNew]};
+ assert.equal(inspectFullPackage(f.zip(),rotated).manifest.id,'TEST_MOD');
+ assert.throws(()=>inspectFullPackage(f.zip(),{test:[publicNew]}),/Firma inválida/);
+});
 test('tampered component, changed manifest, unknown publisher and extra paths are rejected',()=>{for(const change of [(f:ReturnType<typeof fixture>)=>f.files['backend/main.mjs']=strToU8('evil'),(f:ReturnType<typeof fixture>)=>f.files['manifest.json']=strToU8(JSON.stringify({...f.manifest,id:'CORE'})),(f:ReturnType<typeof fixture>)=>f.files['../outside']=strToU8('bad')]){const f=fixture();change(f);assert.throws(()=>inspectFullPackage(f.zip(),trust));}assert.throws(()=>inspectFullPackage(fixture().zip(),{}));});
 test('query broker rejects extra parameters and preserves identifiers without raw SQL interpolation',()=>{const p=inspectFullPackage(fixture().zip(),trust);const q=compileQuery(p.manifest.id,p.queries,'find',{value:'00001',page:1});assert(q.sql.includes('[mod_test_mod].[offers]'));assert(!q.sql.includes('00001'));assert.equal(q.params.p0,'00001');assert.equal(q.params.offset,50);for(const params of [{value:'%25',page:0},{value:'1',page:-1},{value:'1',page:0,sql:'DROP'}])assert.throws(()=>compileQuery(p.manifest.id,p.queries,'find',params));assert.throws(()=>compileQuery(p.manifest.id,p.queries,'toString',{}));});
 test('contract cannot declare another module permission or read core tables',()=>{const p=inspectFullPackage(fixture().zip(),trust);assert.throws(()=>validateContracts({...p.manifest,permission:'CORE.USERS.READ'},p.migration,p.queries));assert.throws(()=>validateContracts(p.manifest,p.migration,{find:{...p.queries.find,table:'users'}}));assert.throws(()=>migrationSchema.parse({tables:[{name:'x]; DROP TABLE core.users',columns:[],indexes:[]}]}));});
