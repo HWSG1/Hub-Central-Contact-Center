@@ -33,9 +33,9 @@ def main():
  conn=pyodbc.connect("DRIVER={ODBC Driver 18 for SQL Server};SERVER="+a.server+";DATABASE="+a.database+";Trusted_Connection=yes;Encrypt=yes;TrustServerCertificate=no",autocommit=False,timeout=30)
  inserted=skipped=0
  sql="""INSERT INTO [mod_tv_desembolsos].[certificados]
- (id_origen,certificado,tipo_venta,tipo_desembolso,fecha_desembolso,correo_origen,gestion_origen,estado_origen,observacion_origen,cuenta_tc_origen,fecha_creacion_origen,registrado_por)
+ (id_origen,certificado,tipo_venta,tipo_desembolso,fecha_desembolso,correo_origen,gestion_origen,estado_origen,observacion_origen,cuenta_tc_origen,fecha_creacion_origen,creado_por_nombre_origen,registrado_por)
  OUTPUT INSERTED.id
- SELECT ?,?,?,?,?,?,?,?,?,?,?,?
+ SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?
  WHERE NOT EXISTS (SELECT 1 FROM [mod_tv_desembolsos].[certificados] WITH (UPDLOCK,HOLDLOCK) WHERE id_origen=?)"""
  try:
   cur=conn.cursor()
@@ -43,7 +43,7 @@ def main():
    if not cur.execute("SELECT 1 FROM core.users WHERE id=? AND enabled=1",uid).fetchone():raise ValueError("Usuario no activo o inexistente en mapping.")
   for r in rows:
    uid=mapping.get((r["correo_origen"] or "").strip().lower())
-   vals=[nul(r[k]) for k in COLS[:11]]+[uid,r["id_origen"]]
+   vals=[nul(r[k]) for k in COLS[:12]]+[uid,r["id_origen"]]
    saved=cur.execute(sql,*vals).fetchone()
    if saved:inserted+=1
    else:skipped+=1
