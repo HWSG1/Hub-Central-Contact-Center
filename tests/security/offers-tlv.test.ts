@@ -14,8 +14,8 @@ test('observed bases resolve to explicit profiles including malformed accent and
  assert.equal(profileOf({TIPO_BASE:'INTRA/EXTRA AOL',TIPO_FINANCIAMIENTO:'Intrafinanciamiento'}),'INTRA');assert.equal(profileOf({TIPO_BASE:'Otra campaña'}),'GENERAL');
 });
 test('detail follows product field matrix and does not disclose unrelated fields',()=>{
- const row={TIPO_BASE:'BASE TC TITULAR',DNI:'00001',MONTO:1800,CODIGO_CLIENTE:'00002',MAIL:'[NULL]',CUENTA:'999',TASA_EXTRA:40,MONTO_OFERTA_EXTRA:99999,ID_AREA:'private'};
- const result=tlvDetail(row);const values=Object.fromEntries(result.fields.map(f=>[f.key,f.value]));assert.equal(values.DNI,'00001');assert.equal(values.MONTO,1800);assert.equal(values.MAIL,null);assert(!('CUENTA' in values));assert(!('TASA_EXTRA' in values));assert(!('ID_AREA' in values));
+ const row={TIPO_BASE:'BASE TC TITULAR',DNI:'00001',LIMITE:1800,MONTO:9999,CODIGO_CLIENTE:'00002',MAIL:'[NULL]',CUENTA:'999',TASA_EXTRA:40,MONTO_OFERTA_EXTRA:99999,ID_AREA:'private'};
+ const result=tlvDetail(row);const values=Object.fromEntries(result.fields.map(f=>[f.key,f.value]));assert.equal(values.DNI,'00001');assert.equal(values.LIMITE,1800);assert(!('MONTO' in values));assert.equal(result.fields.find(f=>f.key==='LIMITE')?.label,'MONTO');assert.equal(values.MAIL,null);assert(!('CUENTA' in values));assert(!('TASA_EXTRA' in values));assert(!('ID_AREA' in values));
 });
 test('AOL-only details are hidden for ordinary financing and present for AOL',()=>{
  for(const TIPO_BASE of ['EXTRAFINANCIAMIENTO','INTRAFINANCIAMIENTO','CORTA CUOTA']){
