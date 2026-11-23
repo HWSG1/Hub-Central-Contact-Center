@@ -1,10 +1,11 @@
 import {Component,computed,inject,signal} from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {FormBuilder,ReactiveFormsModule,Validators} from '@angular/forms';
 import {firstValueFrom} from 'rxjs';
 import {Auth} from '../auth';
 import {ManagedUser,Role,adminError} from './models';
-@Component({imports:[ReactiveFormsModule],templateUrl:'./users.html'})
+@Component({imports:[ReactiveFormsModule,RouterLink],templateUrl:'./users.html'})
 export class Users {
  auth=inject(Auth);private http=inject(HttpClient);users=signal<ManagedUser[]>([]);roles=signal<Role[]>([]);search=signal('');loading=signal(true);busy=signal(false);error=signal('');notice=signal('');selected=signal<ManagedUser|null>(null);mode=signal<'roles'|'status'|'invite'>('roles');chosen=signal<string[]>([]);
  creating=signal(false);invitation=signal<{username?:string;activationCode:string}|null>(null);activationUrl=window.location.origin+'/activate';

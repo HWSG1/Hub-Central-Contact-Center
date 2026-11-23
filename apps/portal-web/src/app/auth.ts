@@ -2,7 +2,7 @@ import { inject,Injectable,signal } from '@angular/core';
 import { HttpClient,HttpInterceptorFn } from '@angular/common/http';
 import { CanActivateFn,Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-export interface Identity {id:string;name:string;permissions:string[];csrf:string;}
+export interface Identity {id:string;name:string;roles:string[];permissions:string[];csrf:string;}
 @Injectable({providedIn:'root'}) export class Auth {
  private http=inject(HttpClient);user=signal<Identity|null>(null);
  async refresh(){try{this.user.set(await firstValueFrom(this.http.get<Identity>('/api/auth/me')));return true;}catch{this.user.set(null);return false;}}

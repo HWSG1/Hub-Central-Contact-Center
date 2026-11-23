@@ -1,0 +1,1 @@
+Para activar la identidad corporativa, colocar aquí los archivos originales de Marca: logo-10.png para tema claro y logo-12.png para tema oscuro. Los recursos no se incluyeron en el adjunto recibido. Hasta agregarlos, la UI conserva el identificador H como alternativa.

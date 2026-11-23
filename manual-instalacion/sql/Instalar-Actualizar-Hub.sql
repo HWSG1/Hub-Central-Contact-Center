@@ -28,7 +28,8 @@ INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c
 (N''005_builtin_modules.sql'',N''12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3''),
 (N''006_offers_installer.sql'',N''0fef9559a49898f5eea85c2658640064efe157ef11da7c429af2bfed473c6641''),
 (N''007_offers_tlv.sql'',N''8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac''),
-(N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae'');
+(N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae''),
+(N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
 IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''ofertas'') AND name IN(N''ofertas_cliente'',N''base_tlv'') AND OBJECT_ID(N''core.install_ofertas_v1'',N''P'') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N''mod[_]%'' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N''hub_package_owner'')) AND OBJECT_ID(N''core.create_package_storage'',N''P'') IS NOT NULL) OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
@@ -459,6 +460,15 @@ GRANT EXECUTE ON core.create_package_storage TO hub_runtime;
 GRANT EXECUTE ON core.register_package_permission TO hub_runtime;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae'');
+ END;
+
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''009_favorites_runtime.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''-- Allow the authenticated Hub API to persist application shortcuts per user.
+-- The API verifies that each application is published and authorized before writing.
+GRANT INSERT, DELETE ON OBJECT::core.user_favorites TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;
