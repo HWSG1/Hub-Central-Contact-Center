@@ -716,7 +716,7 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
  }
 }
 @media (min-width:40.001rem) and (max-width:64rem) {
- .sidebar:not(.no-such-class) .sidebar-header {
+ .sidebar .sidebar-header {
   position:relative;
   width:calc(100% + 1.5rem);
   min-width:0;
