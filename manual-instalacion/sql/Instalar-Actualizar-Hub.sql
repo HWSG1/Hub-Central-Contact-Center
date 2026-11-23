@@ -30,7 +30,8 @@ INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c
 (N''007_offers_tlv.sql'',N''8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac''),
 (N''008_independent_modules.sql'',N''38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae''),
 (N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3''),
-(N''010_tlv_auditoria_installer.sql'',N''45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b'');
+(N''010_tlv_auditoria_installer.sql'',N''45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b''),
+(N''011_package_append.sql'',N''00a2ebfa0ff5d5e7bec95e04e31ff1ea3aa4e56ca5451c7e1a127b5be9d05375'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
 IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''ofertas'') AND name IN(N''ofertas_cliente'',N''base_tlv'') AND OBJECT_ID(N''core.install_ofertas_v1'',N''P'') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N''mod[_]%'' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N''hub_package_owner'')) AND OBJECT_ID(N''core.create_package_storage'',N''P'') IS NOT NULL) OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
@@ -616,6 +617,33 @@ IF EXISTS (SELECT 1 FROM core.modules WHERE code=''''OFERTAS_TLV'''')
    EXEC core.prepare_tlv_auditoria_v1;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''010_tlv_auditoria_installer.sql'',N''45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b'');
+ END;
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''011_package_append.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''-- 011: append-only permissions for declarative, signed package operations.
+-- No direct DDL or cross-schema access for the package runtime.
+CREATE PROCEDURE core.grant_package_append @code varchar(40), @table varchar(48)
+WITH EXECUTE AS ''''hub_package_owner''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ IF @@TRANCOUNT=0 THROW 51920,''''Se requiere transaccion.'''',1;
+ IF @code IS NULL OR LEN(@code)<3 OR @code COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Z0-9_]%'''' OR LEFT(@code,1) COLLATE Latin1_General_100_BIN2 NOT LIKE ''''[A-Z]''''
+  THROW 51921,''''Modulo no valido.'''',1;
+ IF @table IS NULL OR LEN(@table)=0 OR @table COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Za-z0-9_]%'''' OR LEFT(@table,1) COLLATE Latin1_General_100_BIN2 NOT LIKE ''''[A-Za-z]''''
+  THROW 51922,''''Tabla no valida.'''',1;
+ DECLARE @schema sysname=N''''mod_''''+LOWER(@code);
+ IF OBJECT_ID(QUOTENAME(@schema)+N''''.''''+QUOTENAME(@table),N''''U'''') IS NULL
+  THROW 51923,''''Tabla del modulo inexistente.'''',1;
+ DECLARE @ddl nvarchar(max)=N''''GRANT INSERT ON OBJECT::''''+QUOTENAME(@schema)+N''''.''''+QUOTENAME(@table)+N'''' TO hub_runtime;'''';
+ EXEC sys.sp_executesql @ddl;
+END;
+'';
+EXEC sys.sp_executesql N''
+GRANT EXECUTE ON core.grant_package_append TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''011_package_append.sql'',N''00a2ebfa0ff5d5e7bec95e04e31ff1ea3aa4e56ca5451c7e1a127b5be9d05375'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;
