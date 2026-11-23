@@ -47,6 +47,8 @@ jobs:
           if (!(Test-Path $node26)) { throw "Node 26 no se pudo preparar" }
           & $node26 --version
           "MODULE_NODE=$node26" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Regenerar SQL consolidado de migraciones aprobadas
+        run: npm run docs:build
       - name: Ejecutar pruebas de seguridad
         run: npm test
       - name: Verificar sintaxis de importadores Python
