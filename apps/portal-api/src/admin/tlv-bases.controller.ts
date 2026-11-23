@@ -68,7 +68,17 @@ export class TlvBasesController {
   await this.ensureReady(req);
   const rows=await this.db.query(`
    SELECT TOP(25) c.carga_id,c.archivo,c.modalidad,c.tipo_base,c.periodo,
-    c.esperados,c.insertados,c.rechazados,c.estado,c.creado_en,c.activado_en,
+    c.esperados,c.insertados,c.rechazados,
+    CASE
+     WHEN c.estado='ACTIVADA'
+      AND EXISTS(SELECT 1 FROM mod_ofertas_tlv.base_tlv b WHERE b.carga_id=c.carga_id AND b.activo=1)
+       THEN 'ACTIVADA'
+     WHEN c.estado='ACTIVADA'
+      AND EXISTS(SELECT 1 FROM mod_ofertas_tlv.base_tlv b WHERE b.carga_id=c.carga_id AND b.activo=0)
+       THEN 'REEMPLAZADA'
+     ELSE c.estado
+    END AS estado,
+    c.estado AS estado_registrado,c.creado_en,c.activado_en,
     c.usuario_hub,c.usuario_bd,COALESCE(u.display_name,c.usuario_bd) AS responsable,
     c.error_resumen
    FROM mod_ofertas_tlv.cargas c LEFT JOIN core.users u ON u.id=c.usuario_hub
