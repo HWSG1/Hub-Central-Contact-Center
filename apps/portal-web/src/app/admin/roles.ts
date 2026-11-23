@@ -1,10 +1,11 @@
 import {Component,computed,inject,signal} from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {FormBuilder,ReactiveFormsModule,Validators} from '@angular/forms';
 import {firstValueFrom} from 'rxjs';
 import {Auth} from '../auth';
 import {Role,adminError} from './models';
-@Component({imports:[ReactiveFormsModule],templateUrl:'./roles.html'})
+@Component({imports:[ReactiveFormsModule,RouterLink],templateUrl:'./roles.html'})
 export class Roles {
  auth=inject(Auth);private http=inject(HttpClient);private fb=inject(FormBuilder);
  roles=signal<Role[]>([]);permissions=signal<string[]>([]);ownRoles=signal<string[]>([]);search=signal('');filterPermissions=signal('');loading=signal(true);busy=signal(false);error=signal('');notice=signal('');mode=signal<'role'|'permissions'|null>(null);selected=signal<Role|null>(null);chosen=signal<string[]>([]);
