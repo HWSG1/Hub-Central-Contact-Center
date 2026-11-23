@@ -18,7 +18,10 @@
             "outputPath": "dist/web",
             "security": {
               "autoCsp": true
-            }
+            },
+            "assets": [
+              "apps/portal-web/public"
+            ]
           },
           "configurations": {
             "production": {
