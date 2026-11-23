@@ -1,0 +1,52 @@
+name: Validación del instalador TLV
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/portal-api/**'
+      - 'database/migrations/**'
+      - 'manual-instalacion/**'
+      - 'scripts/**'
+      - 'tests/security/**'
+      - '.github/workflows/tlv-installer-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validacion:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar Node 24.15
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: 'npm'
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias bloqueadas
+        run: npm ci
+      - name: Comprobar código y frontend
+        run: npm run build
+      - name: Preparar Node 26 independiente para sandbox
+        shell: pwsh
+        run: |
+          $version = 'v26.11.0'
+          $archivo = Join-Path $env:RUNNER_TEMP 'node26.zip'
+          $carpeta = Join-Path $env:RUNNER_TEMP 'node26'
+          Invoke-WebRequest -Uri "https://nodejs.org/dist/$version/node-$version-win-x64.zip" -OutFile $archivo
+          Expand-Archive -Path $archivo -DestinationPath $carpeta
+          $node26 = Join-Path $carpeta "node-$version-win-x64/node.exe"
+          if (!(Test-Path $node26)) { throw "Node 26 no se pudo preparar" }
+          & $node26 --version
+          "MODULE_NODE=$node26" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Ejecutar pruebas de seguridad
+        run: npm test
+      - name: Verificar sintaxis del importador Python
+        run: python -m py_compile apps/portal-api/scripts/tlv-import.py
