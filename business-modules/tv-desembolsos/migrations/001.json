@@ -71,6 +71,9 @@
         ],
         [
           "certificado"
+        ],
+        [
+          "id_origen"
         ]
       ]
     }
