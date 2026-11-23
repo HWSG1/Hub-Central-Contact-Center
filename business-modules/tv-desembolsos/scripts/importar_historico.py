@@ -17,8 +17,8 @@ def main():
  keys=[r["id_origen"] for r in rows]
  if len(set(keys))!=len(keys) or any(not re.fullmatch("[a-f0-9]{40}",k) for k in keys):p.error("Identificadores de importación inválidos o duplicados.")
  for i,r in enumerate(rows,2):
-  if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}",r["fecha_desembolso"]):p.error(f"Fecha inválida en fila {i}.")
-  if r["certificado"] and not re.fullmatch(r"\\d{9}",r["certificado"]):p.error(f"Certificado inválido en fila {i}.")
+  if not re.fullmatch(r"\d{4}-\d{2}-\d{2}",r["fecha_desembolso"]):p.error(f"Fecha inválida en fila {i}.")
+  if r["certificado"] and not re.fullmatch(r"\d{9}",r["certificado"]):p.error(f"Certificado inválido en fila {i}.")
  print(f"PREVISUALIZACIÓN: {len(rows)} registros; sin certificado={sum(not r['certificado'] for r in rows)}; sin tipo venta={sum(not r['tipo_venta'] for r in rows)}; sin tipo desembolso={sum(not r['tipo_desembolso'] for r in rows)}")
  if not a.apply:return
  if a.confirm!="TV_CERTIFICADOS_16538" or not a.server or not a.database:p.error("Para aplicar: --server, --database, --apply y --confirm TV_CERTIFICADOS_16538.")
