@@ -1,51 +1,48 @@
-# TV_DESEMBOLSOS — contrato funcional corregido (23/11/2026)
+# TV_DESEMBOLSOS · Televentas y desembolsos
 
-**Estado: diseño documentado, no implementado ni instalable.** No ejecutar SQL productivo sin autorización.
+**Módulo independiente para Contact Center Hub** — `hub-package-v2`, editor Ed25519 autorizado, versión 1.0.0. Este directorio solo contiene código y migraciones declarativas; **ningún dato de SharePoint ni secreto**.
 
-## Fuente de verdad
-- Captura actual de Power Apps: el registro operativo de desembolso se hace **directamente**, SIN crear previamente una llamada o una venta.
-- Archivo privado de análisis: `Base Sharepoint.xlsx`. Este archivo **NO se agrega al repositorio** ni al ZIP, por contener datos personales y operativos.
-- Aplicación original Power Apps y paquete de ejemplo OFERTAS_TLV_1.3.3.
+## Alcance acordado
+- Registro directo de **cuatro campos**: certificado de exactamente 9 números (texto), tipo de venta (EXTRA, INTRA, CORTA CUOTAS), tipo de desembolso (CUENTA, VENTANILLA) y fecha de desembolso obligatoria.
+- El usuario operador viene exclusivamente de la **sesión autenticada del Hub**. Un cliente no puede suplantarlo mediante parámetros del módulo.
+- **Mis desembolsos:** mes actual de Honduras por defecto y selección de otros meses; filtrado forzoso por usuario autenticado; paginación de 50 registros.
+- **TV_Ventas se excluye por completo**: no se crea tabla, no se consulta ni se importa.
+- `Usuarios` de SharePoint tampoco concede permisos: los administra el Hub.
+- Única tabla operativa `mod_tv_desembolsos.certificados`, permiso `TV_DESEMBOLSOS.USE`.
+- Se conservan campos auxiliares nullable en la tabla para el histórico de `TV_Certificados`; no se muestran en el formulario. Los registros nuevos requieren todos sus campos mediante validación del backend.
 
-## Datos verificados del Excel
-- `TV_Certificados`: **16,538 filas** (16,535 con certificado; 16,526 certificados distintos). 9 certificados se repiten dos veces. Todas las filas tienen `ESTADO=En proceso`. Tipos: EXTRA (6,933), CORTA CUOTAS (5,521), INTRA (4,005); tipo vacío 79. Desembolsos CUENTA (14,292) y VENTANILLA (2,100); faltantes 146. Fecha de venta presente en 16,538. Periodo noviembre 2026: 1,633.
-- `TV_Ventas`: 430 registros de la mecánica anterior (391 Cerrada, 39 En trámite). `ID_TV_VENTAS` completo, pero no hay valores de `ID_TV_VENTAS` en certificados para construir una relación confiable.
-- `Usuarios`: 22 filas (13 ADMINISTRADOR, 6 SUPERVISOR, 3 JEFE). Es catálogo anterior de Power Apps y no debe constituir autoridad en Hub.
-- `CERTIFICADO`: los 16,535 no vacíos tienen 9 dígitos en este extracto. `GESTION`: los 14,314 no vacíos tienen 10 dígitos.
+## Dependencia técnica del instalador
+El Hub en `main` solo tiene broker SELECT. La rama de este módulo agrega declaraciones restringidas de inserción y consultas por actor/mes, puente sandbox, y la migración **011_package_append.sql**. No incluye SQL arbitrario desde el ZIP. Las escrituras están limitadas a las columnas declaradas del módulo y al actor inyectado por servidor, bajo `TV_DESEMBOLSOS.USE`, sesión/MFA y CSRF del Hub. El permiso SQL `INSERT` se concede **solo al objeto declarado** durante la instalación transaccional. Un administrador DBA debe evaluar esta concesión para el entorno.
 
-## Formulario actual (exclusivamente los cuatro campos visibles)
-1. CERTIFICADO: requerido; expresión `^[0-9]{9}$`. Almacenamiento **texto**, nunca numérico para evitar perder ceros iniciales.
-2. TIPO_VENTA: selector `EXTRA`, `INTRA`, `CORTA CUOTAS`.
-3. TIPO_DESEMBOLSO: selector `CUENTA`, `VENTANILLA`.
-4. FECHA_DESEMBOLSO: selector fecha, requerido; corresponde a `FECHA_VENTA` de la fuente histórica.
+La nueva función de instalación no modifica Ofertas TLV: módulos anteriores conservan intactos sus contratos de consulta y hashes SQL. La actualización de un módulo previamente instalado que cambie tablas o consultas sigue bloqueada.
 
-El backend genera `CREADO_POR_USER_ID` desde la sesión autenticada, y `FECHA_CREACION` del servidor. No aceptar campos de identidad desde el iframe. `GESTION`, `CUENTA_TC`, `ID_TV_VENTAS` y `OBSERVACION` solo se preservan para legado; no pedirlos en formulario.
+## Instalación (QA primero)
+1. Actualizar código del Hub desde el PR aprobado y ejecutar `npm ci`, `npm test`, `npm run build` y `npm run docs:check`; verificar Node 26 para módulos (`MODULE_NODE`).
+2. Revisar `database/migrations/011_package_append.sql` y aplicar el **SQL consolidado** mediante el procedimiento del manual, servidor/base explícitos y `@Apply=0` antes de `@Apply=1`. No ejecutarlo sobre producción sin CAB/autorización.
+3. Firmar el paquete con **clave privada Ed25519 del editor autorizado** mediante `npm run modules:pack -- business-modules/tv-desembolsos RUTA_CLAVE_PRIVADA business-modules/packages/tv-desembolsos-1.0.0.zip`. La clave privada no se coloca en el ZIP ni se sube a Git.
+4. Revisar que la **clave pública correspondiente** ya esté en el archivo `MODULE_TRUST_FILE` del ambiente (QA y producción con controles separados). No añadir al registro de confianza una clave incluida por el propio paquete.
+5. Hub → Centro de módulos → Importar módulo → cargar ZIP firmado → Analizar → confirmar objeto `mod_tv_desembolsos.certificados` y permiso `TV_DESEMBOLSOS.USE` → instalar → publicar.
+6. Asignar `TV_DESEMBOLSOS.USE` al rol autorizado del operador. Probar aislamiento por operador, validaciones y duplicados antes de habilitar el registro real.
 
-## Historial por operador
-- Por defecto el mes calendario actual en zona `America/Tegucigalpa`, por `FECHA_DESEMBOLSO`; selector de mes anterior, con límites `>= inicio` y `< inicio del mes siguiente`.
-- Paginación y resumen por mes (cantidad de registros y por tipo de venta).
-- El usuario solo consulta sus propios registros mediante `core.users.id`; consulta global requiere permiso separado y un diseño de autorización específico.
-- Históricos originados de SharePoint vienen con correo `CREADO_POR`; preservar el texto original y mapearlo a IDs del Hub mediante una tabla de equivalencia revisada por administrador. Evitar exponer registros históricos no mapeados a otros operadores.
+## Datos históricos
+El Excel proporcionado contiene **16,538 registros** en `TV_Certificados`, de los cuales **3** no tienen certificado, **79** no tienen tipo de venta y **146** no tienen tipo de desembolso. Se admiten nulos de legado; **no eliminar** esas filas. Los 9 certificados repetidos deben conservarse durante la importación. **No importar TV_Ventas**.
 
-## Modelo SQL orientativo
-Esquema `mod_tv_desembolsos`:
-- `certificados`: `certificado varchar(40) NOT NULL`, `tipo_venta nvarchar(300) NULL` (NULL por valores históricos), `tipo_desembolso nvarchar(300) NULL`, `fecha_desembolso date NOT NULL`, `creado_por_user_id nvarchar(300) NULL`, `creado_por_origen nvarchar(300) NULL`, `fecha_creacion_origen` requiere soporte `datetime2` o almacenamiento normalizado alternativo, `gestion varchar(40) NULL`, `id_tv_ventas varchar(40) NULL`, `cuenta_tc varchar(40) NULL`, `observacion nvarchar(2000) NULL`, `origen varchar(40) NOT NULL`.
-- `ventas_legacy` (solo archivo histórico de los 430 registros), con columnas de origen necesarias, sin vinculación obligatoria a certificados, para conservar datos sin forzar un proceso antiguo.
-- `core` sigue gestionando usuarios/roles/permiso `TV_DESEMBOLSOS.USE`.
+El histórico se carga **fuera del ZIP**, desde el CSV privado generado a partir del Excel. Se incluye `scripts/importar_historico.py`:
+- por defecto **solo previsualiza** y verifica el conteo, sin abrir SQL;
+- `--apply` exige destino y confirmación explícitos, conexión Windows cifrada y certificado SQL verificado;
+- es idempotente por `id_origen` único en archivo (hash de origen) y no borra ni actualiza filas;
+- sin mapeo de usuario, conserva `correo_origen` y deja `registrado_por` nulo: esos registros no se asignan automáticamente al historial personal.
 
-**Nota:** el esquema declarativo v2 actual no permite `datetime2`, claves únicas, filtrado por fechas/usuario o escritura de registros. El modelo anterior es propuesta, no un contrato ya admitido.
+Un administrador debe aprobar el mapeo email histórico → GUID de `core.users` antes de importar con `--mapping`. Ejemplo de archivo *privado*: columnas `correo,hub_user_id`. No copiar ese archivo al ZIP ni al repositorio.
 
-## Requisito de plataforma antes de un ZIP funcional
-El broker v2 (consulta exacta de igualdad, lectura exclusiva) necesita una nueva versión auditada con:
-- Escrituras declarativas y parametrizadas `INSERT` únicamente sobre las columnas permitidas del módulo, identidad de actor fijada en servidor.
-- Filtros obligatorios por actor y fechas (sin SQL del paquete), paginación, contadores.
-- Permisos mínimos para la cuenta runtime; el usuario del paquete no obtiene SQL arbitrario, acceso a otros esquemas ni credenciales.
-- Resguardo de idempotencia, política de duplicados: los 9 duplicados del histórico deben preservarse, pero para nuevos registros evitar dobles envíos.
-- Migración nueva en Hub; no editar la migración 008 ya aplicada. Actualizar checksum, SQL consolidado mediante `npm run docs:build`, manual e historial; ejecutar `npm test`, `npm run build`, `npm run docs:check`.
-- Firmar con editor Ed25519 autorizado en ambiente correspondiente, nunca con firma ficticia.
+```powershell
+python business-modules/tv-desembolsos/scripts/importar_historico.py --csv "C:\ruta\TV_Certificados_Historico_Importacion.csv"
+# SOLO luego de aprobación QA / DBA:
+python business-modules/tv-desembolsos/scripts/importar_historico.py --csv "C:\ruta\TV_Certificados_Historico_Importacion.csv" --server SERVIDOR --database BASE_QA --mapping "C:\ruta\mapeo.csv" --apply --confirm TV_CERTIFICADOS_16538
+```
 
-## Migración de los datos
-1. Crear tablas bajo esquema nuevo en QA mediante instalador mejorado.
-2. Importar 16,538 certificados y 430 ventas históricas desde export XLSX **fuera del ZIP** mediante proceso controlado, preservando filas y sus metadatos originales (incluye vacíos y duplicados).
-3. Validar conteos, fechas, duplicados y correspondencia correo ↔ usuario; resolver identificaciones antes de habilitar el historial individual.
-4. No modificar SharePoint ni otros módulos. Conmutar captura a Hub tras prueba UAT.
+## Pruebas y límites
+Las pruebas unitarias del contrato están en `tests/security/tv-desembolsos.test.ts`. Se debe validar compilación, SQL consolidado, firma del editor, instalación y ejecución real en QA, concurrencia (certificado duplicado) y permisos `INSERT`/lectura efectivos. **No asumir que una revisión de código prueba integridad en SQL real**. No se han ejecutado escrituras SQL ni un despliegue desde esta conversación.
+
+## Modelado de datos
+La tabla del instalador agrega `id`, `activo`, `cargado_en`; las columnas específicas son `certificado`, `tipo_venta`, `tipo_desembolso`, `fecha_desembolso`, `registrado_por` y auxiliares legacy: `correo_origen`, `id_origen`, `gestion_origen`, `estado_origen`, `observacion_origen`, `cuenta_tc_origen`, `fecha_creacion_origen`. Fecha de desembolso es `date`; fecha creación original es texto ISO por limitación del contrato v2, no representa una zona horaria arbitraria.
