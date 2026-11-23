@@ -1,7 +1,7 @@
 import {Component,ElementRef,ViewChild,inject,signal,OnDestroy} from '@angular/core';
 import {ActivatedRoute,RouterLink} from '@angular/router';
 import {DomSanitizer,SafeHtml} from '@angular/platform-browser';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient,HttpErrorResponse} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
 import {adminError} from './admin/models';
 @Component({imports:[RouterLink],template:`<header><a routerLink="/">Mis aplicaciones</a><h1>{{name()}}</h1></header>@if(error()){<p role="alert">{{error()}}</p>}@if(html()){<iframe #frame title="Herramienta instalada" sandbox="allow-scripts allow-downloads allow-forms" referrerpolicy="no-referrer" [srcdoc]="html()"></iframe>}`,styles:[`:host{display:block}header{margin-bottom:12px}h1{font-size:1.4rem;margin:8px 0}iframe{display:block;width:100%;height:calc(100dvh - 210px);min-height:540px;border:0;border-radius:12px;background:white}`]})
@@ -19,7 +19,11 @@ export class PackageHost implements OnDestroy {
   const data=event.data;if(!data||data.type!=='hub:request'||!Number.isSafeInteger(data.id)||typeof data.operation!=='string')return;
   if(this.active>=4){target.postMessage({type:'hub:response',id:data.id,error:'Demasiadas solicitudes.'},'*');return;}
   this.active++;
-  try{if(JSON.stringify(data.input??null).length>16384)throw Error();const response=await firstValueFrom(this.http.post<{result:unknown}>('/api/extensions/'+encodeURIComponent(this.code)+'/run',{operation:data.operation,input:data.input}));if(this.alive)target.postMessage({type:'hub:response',id:data.id,result:response.result},'*');}catch{if(this.alive)target.postMessage({type:'hub:response',id:data.id,error:'No se pudo completar la operación. Revisa los datos y tu sesión.'},'*');}finally{this.active--;}
+  try{if(JSON.stringify(data.input??null).length>16384)throw Error();const response=await firstValueFrom(this.http.post<{result:unknown}>('/api/extensions/'+encodeURIComponent(this.code)+'/run',{operation:data.operation,input:data.input}));if(this.alive)target.postMessage({type:'hub:response',id:data.id,result:response.result},'*');}catch(error){
+    const permitted=['El certificado debe contener exactamente 9 dígitos.','Tipo de venta inválido.','Tipo de desembolso inválido.','Fecha de desembolso inválida.','El certificado ya está registrado.','Período inválido.','Página inválida.','Campos no admitidos.','Filtro inválido.'];
+    const message=error instanceof HttpErrorResponse&&error.status===400&&this.code==='TV_DESEMBOLSOS'&&typeof error.error?.message==='string'&&permitted.includes(error.error.message)?error.error.message:'No se pudo completar la operación. Revisa los datos y tu sesión.';
+    if(this.alive)target.postMessage({type:'hub:response',id:data.id,error:message},'*');
+   }finally{this.active--;}
  }
  ngOnDestroy(){this.alive=false;window.removeEventListener('message',this.listener);}
 }
