@@ -34,6 +34,18 @@ jobs:
         run: npm ci
       - name: Comprobar código y frontend
         run: npm run build
+      - name: Preparar Node 26 independiente para sandbox
+        shell: pwsh
+        run: |
+          $version = 'v26.11.0'
+          $archivo = Join-Path $env:RUNNER_TEMP 'node26.zip'
+          $carpeta = Join-Path $env:RUNNER_TEMP 'node26'
+          Invoke-WebRequest -Uri "https://nodejs.org/dist/$version/node-$version-win-x64.zip" -OutFile $archivo
+          Expand-Archive -Path $archivo -DestinationPath $carpeta
+          $node26 = Join-Path $carpeta "node-$version-win-x64/node.exe"
+          if (!(Test-Path $node26)) { throw "Node 26 no se pudo preparar" }
+          & $node26 --version
+          "MODULE_NODE=$node26" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Ejecutar pruebas de seguridad
         run: npm test
       - name: Verificar sintaxis del importador Python
