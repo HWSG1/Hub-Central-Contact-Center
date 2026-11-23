@@ -4,7 +4,7 @@
 
 El ZIP **hub-package-v2** contiene código real: `frontend/index.html` autocontenido, `backend/main.mjs` compilado con sus dependencias, `backend/queries.json`, `migrations/001.json`, `manifest.json` y `signature.txt`. No depende del registro de módulos incluidos ni necesita recompilar Angular/Hub por cada módulo nuevo.
 
-Las migraciones son instrucciones declarativas de tablas, columnas e índices que el instalador traduce a SQL Server. No son SQL arbitrario. Esta primera versión permite consultas de lectura y lógica de cálculo. No admite escrituras de negocio, joins, cambios destructivos de esquema, desinstalación, dependencias npm instaladas en el servidor ni assets externos. Las actualizaciones firmadas de versión pueden reemplazar frontend y backend sin migrar tablas ni modificar contratos de consultas/operaciones; los cambios de SQL siguen requiriendo una migración controlada del Hub. Esas capacidades requieren ampliar el contrato; no deben simularse en el paquete.
+Las migraciones son instrucciones declarativas de tablas, columnas e índices que el instalador traduce a SQL Server. No son SQL arbitrario. La versión inicial anterior a la migración 011 permitía solo consultas de lectura y lógica de cálculo. No admitía escrituras de negocio, joins, cambios destructivos de esquema, desinstalación, dependencias npm instaladas en el servidor ni assets externos. Las actualizaciones firmadas de versión pueden reemplazar frontend y backend sin migrar tablas ni modificar contratos de consultas/operaciones; los cambios de SQL siguen requiriendo una migración controlada del Hub. Esas capacidades requieren ampliar el contrato; no deben simularse en el paquete.
 
 ## Preparación inicial (una vez por entorno)
 
