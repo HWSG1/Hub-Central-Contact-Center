@@ -31,6 +31,13 @@ export class AdminService {
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
+   // Fallar antes de registrar un módulo TLV si falta su instalador autorizado.
+   if(manifest.id==='OFERTAS_TLV'){
+    const tlv=(await q<{ready:number}>(
+     "SELECT CASE WHEN OBJECT_ID(N'core.prepare_tlv_auditoria_v1',N'P') IS NULL THEN 0 ELSE 1 END AS ready"
+    )).recordset[0];
+    if(!tlv?.ready)throw new ConflictException('Falta la actualización 010 del Hub para preparar automáticamente la auditoría TLV. Solicita revisión del DBA.');
+   }
    const existing=(await q<{module_id:string;version:string;manifest:string;installation_id:string;state:string}>(
     `SELECT TOP(1) m.id AS module_id,v.version,v.manifest,i.id AS installation_id,i.state
      FROM core.modules m
