@@ -6,5 +6,6 @@
   "005_builtin_modules.sql": "12a33ff64cb78659c3baa671a90578841c861e0579e75e5cc87c9792db9713f3",
   "006_offers_installer.sql": "0fef9559a49898f5eea85c2658640064efe157ef11da7c429af2bfed473c6641",
   "007_offers_tlv.sql": "8f5c30df2db7ace900cd2b7956af96c6b414ef747b1957d47df24afb51e77cac",
-  "008_independent_modules.sql": "38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae"
+  "008_independent_modules.sql": "38d7a9d369bb2eefd1ba78a4213ca55a604c19d9da1127f46dd733765e6514ae",
+  "009_favorites_runtime.sql": "c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3"
 }
