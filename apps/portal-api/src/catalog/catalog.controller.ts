@@ -94,8 +94,8 @@ export class CatalogController {
    FROM core.audit_events ae
    LEFT JOIN core.users u ON u.id=ae.user_id
    LEFT JOIN core.local_credentials lc ON lc.user_id=ae.user_id
-   WHERE ae.id<=@snapshotId AND (@dateFrom IS NULL OR ae.created_at>=CONVERT(date,@dateFrom,23))
-     AND (@dateTo IS NULL OR ae.created_at<DATEADD(day,1,CONVERT(date,@dateTo,23)))
+   WHERE ae.id<=@snapshotId AND (@dateFrom IS NULL OR ae.created_at>=DATEADD(hour,6,CONVERT(datetime2,@dateFrom,23)))
+     AND (@dateTo IS NULL OR ae.created_at<DATEADD(hour,6,DATEADD(day,1,CONVERT(datetime2,@dateTo,23))))
      AND (@search='' OR ae.action LIKE '%'+@search+'%' OR COALESCE(ae.resource_type,'') LIKE '%'+@search+'%'
           OR COALESCE(ae.resource_id,'') LIKE '%'+@search+'%')
      AND (@action='' OR ae.action LIKE '%'+@action+'%')
