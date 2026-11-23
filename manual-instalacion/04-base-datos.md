@@ -3,7 +3,7 @@
 ## Un solo SQL operativo
 Ejecutar [sql/Instalar-Actualizar-Hub.sql](sql/Instalar-Actualizar-Hub.sql) completo en SSMS, sin modo SQLCMD. Es el mismo archivo para instalación inicial y actualizaciones. No ejecutar 001, 002, 003 o 004 por separado ni combinarlo con los instaladores antiguos.
 
-El DBA crea previamente una base dedicada con el nombre, propietario, archivos, recuperación y respaldo acordados. El script no crea bases/logins ni otorga acceso a cuentas de servicio. Contiene 001–004: 19 tablas core, claves/índices, roles/permisos del portal, rol SQL hub_runtime y dbo.hub_migrations. Actualmente no hay procedimientos almacenados de negocio en el proyecto.
+El DBA crea previamente una base dedicada con el nombre, propietario, archivos, recuperación y respaldo acordados. El script no crea bases/logins ni otorga acceso a cuentas de servicio. Contiene las migraciones consecutivas 001–009: estructura core, claves/índices, roles/permisos, catálogo, auditoría, instalación de módulos, procedimientos de soporte y el rol SQL hub_runtime. Las actualizaciones aditivas conservan las tablas y datos existentes.
 
 ## Parámetros
 Para conocer la instancia a la que se conectó SSMS, ejecutar esta consulta de sólo lectura:
@@ -24,7 +24,7 @@ Usar el nombre exacto de instancia que corresponde al destino aprobado. El nombr
 
 ## Revisar y aplicar
 1. Ejecutar TODO con @Apply=0. Muestra destino, hashes y estado APLICADA/PENDIENTE de cada migración, sin escribir. No es una simulación de ejecución ni valida todos los permisos de creación.
-2. Comprobar que el destino y el historial sean los esperados. En una base nueva verás todas pendientes. En una base que ya tiene 001–004 con los mismos hashes, todas aplicadas: no hay nada nuevo que instalar.
+2. Comprobar que el destino y el historial sean los esperados. En una base nueva verás todas pendientes. En una base existente, las migraciones previas con sus mismos hashes figurarán como aplicadas y solo las nuevas aparecerán pendientes.
 3. Con el cambio autorizado, API detenida y validación previa en pruebas, establecer @Apply=1 y ejecutar TODO. Las migraciones pendientes se aplican en una sola transacción. Si hay error, se revierte esa ejecución; no seguir pegando fragmentos sueltos.
 4. El resultado muestra historial y tablas. Si no hay pendientes, no recrea objetos ni usuarios. No elimina datos ni marca como aplicada una migración con hash diferente.
 
