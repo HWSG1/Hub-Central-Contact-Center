@@ -293,8 +293,8 @@ def run(args):
                     errs=[]
             if errs:
                 c.executemany('INSERT mod_ofertas_tlv.carga_errores(carga_id,fila_excel,columna,motivo) VALUES(?,?,?,?)',errs)
-            c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,detalle) VALUES(?,'RECHAZAR',ORIGINAL_LOGIN(),?)",
-                      (batchid,'Falló validación previa; filas rechazadas: '+str(bad)))
+            c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,usuario_hub,detalle) VALUES(?,'RECHAZAR',ORIGINAL_LOGIN(),?,?)",
+                      (batchid,user_hub,'Falló validación previa; filas rechazadas: '+str(bad)))
             conn.commit()
             print('Carga RECHAZADA y auditada. ID:',batchid,file=sys.stderr)
             return 1
@@ -303,8 +303,8 @@ def run(args):
             periodo = date.fromisoformat(next(iter(meses)) + '-01')
         c.execute("INSERT mod_ofertas_tlv.cargas(carga_id,archivo,sha256,modalidad,tipo_base,periodo,usuario_bd,usuario_hub,esperados,estado) VALUES(?,?,?,?,?,?,ORIGINAL_LOGIN(),?,?,'CARGANDO')",
                   (batchid,path.name,digest,mode,args.tipo_base,periodo,user_hub,good))
-        c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,detalle) VALUES(?,'INICIO',ORIGINAL_LOGIN(),?)",
-                  (batchid,'Archivo validado: ' + str(good) + ' filas.'))
+        c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,usuario_hub,detalle) VALUES(?,'INICIO',ORIGINAL_LOGIN(),?,?)",
+                  (batchid,user_hub,'Archivo validado: ' + str(good) + ' filas.'))
         conn.commit()
         fields = ','.join('['+f+']' for f in FIELDS)
         sql = 'INSERT mod_ofertas_tlv.base_tlv (' + fields + ',activo,carga_id,archivo_fila) VALUES (' + ','.join(['?']*(len(FIELDS)+3)) + ')'
@@ -339,7 +339,7 @@ def run(args):
             conn.rollback()
             try:
                 c.execute("UPDATE mod_ofertas_tlv.cargas SET estado='FALLIDA',error_resumen=? WHERE carga_id=? AND estado='CARGANDO'",(str(ex)[:1000],batchid))
-                c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,detalle) VALUES(?,'ERROR',ORIGINAL_LOGIN(),?)",(batchid,str(ex)[:1000]))
+                c.execute("INSERT mod_ofertas_tlv.carga_eventos(carga_id,operacion,usuario_bd,usuario_hub,detalle) VALUES(?,'ERROR',ORIGINAL_LOGIN(),?,?)",(batchid,user_hub,str(ex)[:1000]))
                 conn.commit()
             except Exception:
                 conn.rollback()
