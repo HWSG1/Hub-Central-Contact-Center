@@ -24,37 +24,66 @@ export class AdminService {
   await this.mutate(req,'CORE.MODULES.MANAGE','MODULE.ANALYZE','module',randomUUID(),input.reason,async()=>({before:null,after:{sha256:report.sha256,code:report.manifest.id,version:report.manifest.version}}));
   return report;
  }
+
  async fullPackage(req:SessionRequest,input:{archive:string;reason:string},install:boolean){
   let pkg;try{pkg=inspectFullPackage(input.archive);}catch(error){throw new BadRequestException('Paquete rechazado: '+(error instanceof Error?error.message:'Formato inválido.'));}
   const manifest=pkg.manifest,id=randomUUID();
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
-   if((await q('SELECT id FROM core.modules WHERE code=@code',{code:manifest.id})).recordset.length)throw new ConflictException('Este módulo ya está instalado. La primera versión del instalador no reemplaza módulos existentes.');
-   const health=await executeBackend(pkg.files['backend/main.mjs'],'health',{},async()=>{throw Error('La comprobación inicial no accede a SQL.');});if(!health||typeof health!=='object'||(health as {ok?:boolean}).ok!==true)throw new ConflictException('La comprobación inicial del backend no fue satisfactoria.');
-   if(install){
-    await q('EXEC core.create_package_storage @code=@code,@definition=@definition;',{code:manifest.id,definition:JSON.stringify(pkg.migration)});
-    await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
-    await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
-    const version=randomUUID(),installation=randomUUID();
-    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:version,module:id,version:manifest.version,manifest:JSON.stringify(manifest),hash:pkg.sha256});
-    await q('INSERT core.module_packages(version_id,archive) VALUES(@version,@archive)',{version,archive:pkg.bytes});
-    await q("INSERT core.module_installations(id,version_id,requested_by,state) VALUES(@id,@version,@actor,'VALIDATED')",{id:installation,version,actor:req.user.id});
-    await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:manifest.name,description:manifest.description,route:manifest.route,permission:manifest.permission});
+   const existing=(await q<{module_id:string;version:string;manifest:string;installation_id:string;state:string}>(
+    `SELECT TOP(1) m.id AS module_id,v.version,v.manifest,i.id AS installation_id,i.state
+     FROM core.modules m
+     JOIN core.module_versions v ON v.module_id=m.id
+     JOIN core.module_installations i ON i.version_id=v.id
+     JOIN core.module_packages p ON p.version_id=v.id
+     WHERE m.code=@code ORDER BY i.created_at DESC,i.id DESC`,{code:manifest.id})).recordset[0];
+   let changeType:'NEW'|'FRONTEND_UPGRADE'='NEW';
+   if(existing){
+    changeType='FRONTEND_UPGRADE';
+    const previous=JSON.parse(String(existing.manifest)) as typeof manifest;
+    const parseVersion=(v:string)=>v.split('.').map(n=>Number(n));
+    const before=parseVersion(existing.version),after=parseVersion(manifest.version);
+    const newer=after.findIndex((part,i)=>part!==before[i]);
+    if(newer<0||after[newer]<=before[newer])throw new ConflictException('La actualización debe tener una versión superior a la instalada.');
+    if(previous.format!=='hub-package-v2'||previous.id!==manifest.id||previous.permission!==manifest.permission||previous.publisher!==manifest.publisher||previous.hostApi!==manifest.hostApi)
+     throw new ConflictException('Los contratos de identidad del módulo no pueden cambiar en una actualización.');
+    if(previous.operations.join('|')!==manifest.operations.join('|'))
+     throw new ConflictException('Las operaciones del módulo cambiaron. Esta actualización solo permite cambios visuales.');
+    for(const name of ['backend/main.mjs','backend/queries.json','migrations/001.json']){
+     if(previous.files[name]!==manifest.files[name])
+      throw new ConflictException('La actualización solo permite cambiar la interfaz. No se modificarán tablas ni servicios.');
+    }
    }
-   return {before:null,after:{code:manifest.id,version:manifest.version,sha256:pkg.sha256,publisher:manifest.publisher,schema:'mod_'+manifest.id.toLowerCase(),state:install?'VALIDATED':'ANALYZED'}};
+   const health=await executeBackend(pkg.files['backend/main.mjs'],'health',{},async()=>{throw Error('La comprobación inicial no accede a SQL.');});
+   if(!health||typeof health!=='object'||(health as {ok?:boolean}).ok!==true)throw new ConflictException('La comprobación inicial del backend no fue satisfactoria.');
+   if(install){
+    const versionId=randomUUID(),installationId=randomUUID();
+    if(!existing){
+     await q('EXEC core.create_package_storage @code=@code,@definition=@definition;',{code:manifest.id,definition:JSON.stringify(pkg.migration)});
+     await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
+     await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
+    }
+    await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:existing?.module_id??id,version:manifest.version,manifest:JSON.stringify(manifest),hash:pkg.sha256});
+    await q('INSERT core.module_packages(version_id,archive) VALUES(@version,@archive)',{version:versionId,archive:pkg.bytes});
+    const newState=existing?.state==='PUBLISHED'?'PUBLISHED':existing?.state==='DISABLED'?'DISABLED':'VALIDATED';
+    if(existing&&existing.state==='PUBLISHED')await q("UPDATE core.module_installations SET state='DISABLED' WHERE id=@id AND state='PUBLISHED'",{id:existing.installation_id});
+    await q('INSERT core.module_installations(id,version_id,requested_by,state) VALUES(@id,@version,@actor,@state)',{id:installationId,version:versionId,actor:req.user.id,state:newState});
+    if(!existing)await q('INSERT core.application_catalog(module_id,name,description,route,required_permission,published) VALUES(@module,@name,@description,@route,@permission,0)',{module:id,name:manifest.name,description:manifest.description,route:manifest.route,permission:manifest.permission});
+   }
+   return {resourceId:existing?.module_id??id,before:existing?{code:manifest.id,version:existing.version,state:existing.state}:null,after:{code:manifest.id,version:manifest.version,sha256:pkg.sha256,publisher:manifest.publisher,schema:'mod_'+manifest.id.toLowerCase(),mode:changeType,state:install?(existing?.state??'VALIDATED'):'ANALYZED'}};
   });
   }catch(error){await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,resource_id,details) VALUES(@actor,@action,'FAILURE',@correlation,'module',@id,@details)",{actor:req.user.id,action:install?'MODULE.INSTALL':'MODULE.ANALYZE',correlation:req.correlation,id,details:JSON.stringify({code:manifest.id,version:manifest.version,sha256:pkg.sha256})}).catch(()=>{});throw error;}
   return install?{ok:true,id}:{manifest,sha256:pkg.sha256,size:pkg.size,files:Object.keys(pkg.files),schema:'mod_'+manifest.id.toLowerCase(),tables:pkg.migration.tables.map(t=>t.name)};
  }
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
-  const installed=(await this.db.query(`SELECT m.id,m.code,m.name,m.enabled,v.version,v.manifest,i.state,i.id AS installation_id FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id ORDER BY i.created_at DESC`)).recordset;
+  const installed=(await this.db.query(`WITH versions AS (SELECT m.id,m.code,m.name,m.enabled,v.version,v.manifest,i.state,i.id AS installation_id,ROW_NUMBER() OVER(PARTITION BY m.id ORDER BY i.created_at DESC,i.id DESC) AS rank FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id) SELECT id,code,name,enabled,version,manifest,state,installation_id FROM versions WHERE rank=1 ORDER BY name`)).recordset;
   const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'?[m]:[];}catch{return [];}});
   return {available:descriptor,modules:[...descriptors,...packages],installed};
  }
  async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;code?:string;reason:string}){
-  let selected;try{selected=input.action==='install'?validateDescriptor(JSON.parse(input.manifest??'')):moduleDescriptor(input.code??builtin.id);}catch{if(input.action==='install')throw new BadRequestException('Usa el ZIP firmado para instalar.');const row=(await this.db.query<{manifest:string}>('SELECT v.manifest FROM core.module_versions v JOIN core.modules m ON m.id=v.module_id JOIN core.module_packages p ON p.version_id=v.id WHERE m.code=@code',{code:input.code})).recordset[0];if(!row)throw new BadRequestException('Módulo desconocido.');selected=JSON.parse(row.manifest);}
+  let selected;try{selected=input.action==='install'?validateDescriptor(JSON.parse(input.manifest??'')):moduleDescriptor(input.code??builtin.id);}catch{if(input.action==='install')throw new BadRequestException('Usa el ZIP firmado para instalar.');const row=(await this.db.query<{manifest:string}>('SELECT TOP(1) v.manifest FROM core.module_versions v JOIN core.modules m ON m.id=v.module_id JOIN core.module_packages p ON p.version_id=v.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code ORDER BY i.created_at DESC,i.id DESC',{code:input.code})).recordset[0];if(!row)throw new BadRequestException('Módulo desconocido.');selected=JSON.parse(row.manifest);}
   const id=randomUUID();
   return this.mutate(req,'CORE.MODULES.MANAGE','MODULE.'+input.action.toUpperCase(),'module',id,input.reason,async(q)=>{
    const current=(await q<{id:string;installation_id:string;state:string}>(`SELECT m.id,i.id AS installation_id,i.state FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id WHERE m.code=@code AND v.version=@version`,{code:selected.id,version:selected.version})).recordset[0];
