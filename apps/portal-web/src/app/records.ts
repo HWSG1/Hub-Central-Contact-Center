@@ -10,7 +10,7 @@ interface AuditRow {
  action:string;result:string;resource_type:string|null;
  resource_id:string|null;details:string|null;correlation_id:string;
 }
-interface AuditPage {rows:AuditRow[];page:number;pageSize:number;total:number;hasMore:boolean;}
+interface AuditPage {rows:AuditRow[];page:number;pageSize:number;total:number;snapshotId:number;hasMore:boolean;}
 
 @Component({imports:[DatePipe],template:`
 <div class="page-kicker">GOBIERNO · PLATAFORMA</div>
@@ -83,6 +83,7 @@ export class Records {
  readonly pageSize=signal(25);
  readonly total=signal(0);
  readonly hasMore=signal(false);
+ readonly snapshotId=signal<number|null>(null);
  readonly dateFrom=signal('');
  readonly dateTo=signal('');
  readonly search=signal('');
@@ -102,9 +103,9 @@ export class Records {
   void this.load();
  }
 
- apply(e:Event){e.preventDefault();this.page.set(1);void this.load();}
- clear(){this.dateFrom.set('');this.dateTo.set('');this.search.set('');this.actor.set('');this.action.set('');this.result.set('');this.page.set(1);void this.load();}
- changePageSize(value:string){const n=Number(value);if(![25,50,100].includes(n))return;this.pageSize.set(n);this.page.set(1);void this.load();}
+ apply(e:Event){e.preventDefault();this.page.set(1);this.snapshotId.set(null);void this.load();}
+ clear(){this.dateFrom.set('');this.dateTo.set('');this.search.set('');this.actor.set('');this.action.set('');this.result.set('');this.page.set(1);this.snapshotId.set(null);void this.load();}
+ changePageSize(value:string){const n=Number(value);if(![25,50,100].includes(n))return;this.pageSize.set(n);this.page.set(1);this.snapshotId.set(null);void this.load();}
  next(){if(this.loading()||!this.hasMore())return;this.page.update(p=>p+1);void this.load();}
  previous(){if(this.loading()||this.page()<=1)return;this.page.update(p=>p-1);void this.load();}
 
@@ -120,10 +121,11 @@ export class Records {
   for(const [name,value] of Object.entries({dateFrom:this.dateFrom(),dateTo:this.dateTo(),search:this.search().trim(),actor:this.actor().trim(),action:this.action().trim(),result:this.result()})){
    if(value)params=params.set(name,value);
   }
+  if(this.snapshotId()!=null)params=params.set('snapshotId',this.snapshotId()!);
   try{
    const data=await firstValueFrom(this.http.get<AuditPage>('/api/audit',{params}));
    if(serial!==this.requestNumber)return;
-   this.rows.set(data.rows);this.total.set(data.total);this.hasMore.set(data.hasMore);
+   this.rows.set(data.rows);this.total.set(data.total);this.hasMore.set(data.hasMore);this.snapshotId.set(data.snapshotId);
   }catch{
    if(serial!==this.requestNumber)return;
    this.rows.set([]);this.total.set(0);this.hasMore.set(false);
