@@ -62,6 +62,11 @@
           "name": "fecha_creacion_origen",
           "type": "nvarchar(300)",
           "nullable": true
+        },
+        {
+          "name": "creado_por_nombre_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
         }
       ],
       "indexes": [
