@@ -18,7 +18,7 @@
         <input type="checkbox"
          [attr.aria-label]="role.name+' para '+u.display_name"
          [checked]="selected()?.id===u.id?chosen().includes(role.id):u.roles.includes(role.id)"
-         [disabled]="selected()?.id!==u.id||!assignable(role)||busy()"
+         [disabled]="selected()?.id!==u.id||busy()||(!assignable(role)&&!u.roles.includes(role.id))"
          (change)="toggle(role.id,$any($event.target).checked)">
        </td>
       }
