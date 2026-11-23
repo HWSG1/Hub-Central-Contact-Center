@@ -10,6 +10,7 @@ from collections import Counter
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import hashlib
+import os
 from pathlib import Path, PurePosixPath
 import re
 import sys
@@ -268,7 +269,7 @@ def run(args):
     try:
         import pyodbc
     except ImportError as ex:
-        raise RuntimeError('Instala pyodbc: py -m pip install -r herramientas/requirements.txt') from ex
+        raise RuntimeError('Instala pyodbc en el Python que usa la API: python -m pip install pyodbc') from ex
     if any(x in args.driver for x in (';','{','}')):
         raise ValueError('Nombre de controlador inválido.')
     # Usar el mismo puerto TCP configurado para la API del Hub. Un servidor
@@ -276,8 +277,23 @@ def run(args):
     if args.puerto is not None and not (1 <= args.puerto <= 65535):
         raise ValueError('Puerto SQL fuera de rango.')
     server_address = ('tcp:' + args.servidor + ',' + str(args.puerto)) if args.puerto else args.servidor
+    auth_mode = os.environ.get('SQL_AUTH', 'windows').strip().lower()
+    if auth_mode == 'sql':
+        # Las credenciales se reciben SOLO por variables de entorno heredadas
+        # del proceso API. Nunca se envían como argumentos ni se imprimen.
+        sql_user = os.environ.get('SQL_USER', '')
+        sql_password = os.environ.get('SQL_PASSWORD', '')
+        if not sql_user or not sql_password:
+            raise RuntimeError('SQL_AUTH=sql requiere SQL_USER y SQL_PASSWORD en el entorno de la API.')
+        def odbc_value(value: str) -> str:
+            return '{' + value.replace('}', '}}') + '}'
+        authentication = 'UID=' + odbc_value(sql_user) + ';PWD=' + odbc_value(sql_password) + ';'
+    elif auth_mode == 'windows':
+        authentication = 'Trusted_Connection=Yes;'
+    else:
+        raise ValueError('SQL_AUTH debe ser windows o sql.')
     conn = pyodbc.connect('DRIVER={' + args.driver + '};SERVER=' + server_address + ';DATABASE=' + args.base
-                          + ';Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate='
+                          + ';' + authentication + 'Encrypt=Yes;TrustServerCertificate='
                           + ('Yes;' if args.certificado_desarrollo else 'No;') + 'APP=TLV-Carga-Auditada;', timeout=25)
     c = conn.cursor()
     try:
