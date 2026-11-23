@@ -41,8 +41,12 @@ test('TLV 010: la instalacion es fija, transaccional e idempotente para nuevas t
 test('TLV 010: la API explica migracion faltante y ejecuta instalacion controlada',()=>{
  const service=read('apps/portal-api/src/admin/admin.service.ts');
  assert.match(service,/Falta la actualizaci[oó]n 010 del Hub/);
- assert.ok(service.includes("if(manifest.id==='OFERTAS_TLV')"));
+ assert.ok(service.includes("if(manifest.id==='OFERTAS_TLV'&&!existing)"));
  assert.ok(service.includes("await q('EXEC core.prepare_tlv_auditoria_v1;')"));
+ // A frontend-only upgrade never needs 010 or calls the TLV schema installer.
+ assert.equal((service.match(/if\(manifest\.id==='OFERTAS_TLV'&&!existing\)/g)||[]).length,2);
+ assert.ok(service.indexOf("const existing=")<service.indexOf("Falta la actualización 010"));
+ assert.match(service,/if\(manifest\.id==='OFERTAS_TLV'&&!existing\)\s*await q\('EXEC core\.prepare_tlv_auditoria_v1;'\)/);
  const contracts=read('apps/portal-api/src/modules/contracts.ts');
  assert.ok(contracts.includes('migrationSchema'));
  assert.ok(contracts.includes('.strict()'));
