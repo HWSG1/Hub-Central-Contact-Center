@@ -1,0 +1,43 @@
+<div class="page-kicker">SEGURIDAD · ASIGNACIONES</div>
+<div class="page-heading"><div><h1>Asignación de roles a usuarios</h1><p>Combina roles para dar acceso a los módulos de forma controlada.</p></div><a routerLink="/admin/users" class="admin-secondary">Ver usuarios</a></div>
+<div class="admin-policy">Haz clic en «Editar roles» para preparar los cambios de una cuenta y luego confirma con un motivo. Ninguna casilla se guarda automáticamente. No puedes modificar tu propia cuenta ni conceder privilegios superiores a los tuyos.</div>
+@if(error()){<p class="error-message" role="alert">{{error()}}</p>}
+@if(notice()){<p class="admin-notice" role="status">{{notice()}}</p>}
+<div class="section-heading"><h2>Asignaciones actuales</h2><label class="search"><input aria-label="Buscar usuarios" placeholder="Buscar usuario…" [value]="search()" (input)="search.set($any($event.target).value)"></label></div>
+@if(loading()){<p role="status">Cargando asignaciones…</p>}@else{
+<section class="admin-panel security-panel">
+ <div class="security-table-wrap" role="region" aria-label="Matriz de roles por usuario" tabindex="0">
+  <table class="security-table security-matrix">
+   <thead><tr><th class="sticky-user">Usuario</th>@for(role of roles();track role.id){<th class="role-column"><span>{{role.name}}</span><small>{{role.code}}</small></th>}<th class="cell-actions">Acciones</th></tr></thead>
+   <tbody>
+    @for(u of filtered();track u.id){
+     <tr [class.row-editing]="selected()?.id===u.id">
+      <th scope="row" class="sticky-user"><strong>{{u.display_name}}</strong><small>{{u.login||'Identidad corporativa'}}</small></th>
+      @for(role of roles();track role.id){
+       <td class="cell-center">
+        <input type="checkbox"
+         [attr.aria-label]="role.name+' para '+u.display_name"
+         [checked]="selected()?.id===u.id?chosen().includes(role.id):u.roles.includes(role.id)"
+         [disabled]="selected()?.id!==u.id||!assignable(role)||busy()"
+         (change)="toggle(role.id,$any($event.target).checked)">
+       </td>
+      }
+      <td class="cell-actions">@if(selected()?.id===u.id){<span class="admin-status">Editando</span>}@else if(editable(u)){<button type="button" class="admin-secondary" [disabled]="busy()" (click)="edit(u)">Editar roles</button>}@else{<span class="muted">Solo lectura</span>}</td>
+     </tr>
+    }@empty{<tr><td [attr.colspan]="roles().length+2">No hay usuarios que coincidan con la búsqueda.</td></tr>}
+   </tbody>
+  </table>
+ </div>
+</section>
+@if(selected();as u){
+ <section class="admin-panel security-save-bar">
+  <h2>Confirmar roles · {{u.display_name}}</h2>
+  <p class="admin-help">Roles seleccionados: {{chosen().length}}. El cambio afectará las sesiones y permisos efectivos de esta cuenta.</p>
+  <div class="admin-form">
+   <label for="assignment-reason">Motivo de la asignación</label>
+   <textarea id="assignment-reason" rows="2" maxlength="500" placeholder="Indica el motivo de la modificación (mínimo 5 caracteres)" [value]="reason()" (input)="reason.set($any($event.target).value)"></textarea>
+   <div class="admin-actions"><button class="admin-primary" [disabled]="busy()||reason().trim().length<5" (click)="save()">{{busy()?'Guardando…':'Guardar asignaciones'}}</button><button class="admin-secondary" [disabled]="busy()" (click)="cancel()">Cancelar</button></div>
+  </div>
+ </section>
+}
+}
