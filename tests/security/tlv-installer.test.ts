@@ -2,14 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {dirname,resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
 
 // Pruebas sin acceso a red ni a SQL Server: guardas de seguridad y coherencia
 // del paquete y de la migracion. NO sustituyen las pruebas de integracion SQL.
-const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
+const root=process.cwd();
 const read=(path:string)=>readFileSync(resolve(root,path),'utf8');
-const require=createRequire(import.meta.url);
+const require=createRequire(resolve(root,'package.json'));
 const builder=require('../../scripts/build-install-sql.cjs') as {
  readMigrations:()=>Array<{name:string;hash:string;source:string}>;
  render:(migrations:Array<{name:string;hash:string;source:string}>)=>string;
