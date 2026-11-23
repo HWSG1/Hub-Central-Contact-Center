@@ -1,7 +1,7 @@
 import type {Queries} from './contracts.js';
 export function compileQuery(code:string,queries:Queries,name:string,value:unknown,actor?:string){
  const query=Object.hasOwn(queries,name)?queries[name]:undefined;
- if(!query||('kind' in query&&query.kind==='insert')||!value||typeof value!=='object'||Array.isArray(value))throw Error('Consulta inválida.');
+ if(!query||!('filters' in query)||!value||typeof value!=='object'||Array.isArray(value))throw Error('Consulta inválida.');
  const input=value as Record<string,unknown>;
  const allowed=[...query.filters.map(f=>f.param),...(query.page?['page']:[]),...(query.scope?['period']:[])];
  if(Object.keys(input).some(k=>!allowed.includes(k)))throw Error('Parámetros no admitidos.');
@@ -23,7 +23,7 @@ export function compileQuery(code:string,queries:Queries,name:string,value:unkno
 
 export function compileInsert(code:string,queries:Queries,name:string,value:unknown,actor:string){
  const query=Object.hasOwn(queries,name)?queries[name]:undefined;
- if(!query||!('kind' in query)||query.kind!=='insert'||!value||typeof value!=='object'||Array.isArray(value)||!actor)throw Error('Operación de registro inválida.');
+ if(!query||('filters' in query)||!value||typeof value!=='object'||Array.isArray(value)||!actor)throw Error('Operación de registro inválida.');
  const input=value as Record<string,unknown>;
  if(Object.keys(input).length!==query.columns.length||Object.keys(input).some(k=>!query.columns.includes(k)))throw Error('Columnas no admitidas.');
  const params:Record<string,unknown>={actor};const insertColumns:string[]=[];const values:string[]=[];
