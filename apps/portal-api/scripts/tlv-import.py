@@ -271,8 +271,13 @@ def run(args):
         raise RuntimeError('Instala pyodbc: py -m pip install -r herramientas/requirements.txt') from ex
     if any(x in args.driver for x in (';','{','}')):
         raise ValueError('Nombre de controlador inválido.')
-    conn = pyodbc.connect('DRIVER={' + args.driver + '};SERVER=' + args.servidor + ';DATABASE=' + args.base
-                          + ';Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate='
+    # Usar el mismo puerto TCP configurado para la API del Hub. Un servidor
+    # sin puerto intenta la instancia predeterminada (1433) e ignora SQL_PORT.
+    if args.puerto is not None and not (1 <= args.puerto <= 65535):
+        raise ValueError('Puerto SQL fuera de rango.')
+    server_address = ('tcp:' + args.servidor + ',' + str(args.puerto)) if args.puerto else args.servidor
+    conn = pyodbc.connect('DRIVER={' + args.driver + '};SERVER=' + server_address + ';DATABASE=' + args.base
+                          + ';Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate=
                           + ('Yes;' if args.certificado_desarrollo else 'No;') + 'APP=TLV-Carga-Auditada;', timeout=25)
     c = conn.cursor()
     try:
@@ -357,6 +362,7 @@ def main():
     ap.add_argument('--modo',choices=['reemplazo-total','reemplazo-tipo'],default='reemplazo-total')
     ap.add_argument('--tipo-base',help='Valor exacto de TIPO_BASE si reemplazas uno solo')
     ap.add_argument('--servidor')
+    ap.add_argument('--puerto',type=int,default=None,help='Puerto TCP SQL Server, igual que SQL_PORT de la API')
     ap.add_argument('--base')
     ap.add_argument('--driver',default='ODBC Driver 18 for SQL Server')
     ap.add_argument('--certificado-desarrollo',action='store_true',help='SOLO local: aceptar certificado autofirmado')
