@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gestor transitorio de cargas TLV: lectura XLSX (stdlib), prevalidación, carga inactiva y activación SQL.
+"""Gestor de cargas TLV: admite columnas opcionales del contrato, prevalidación, carga inactiva y activación SQL.
 No elimina registros históricos, no almacena contraseñas, y no hace DDL.
 La interfaz del Hub requiere una ampliación separada: esta utilidad se usa fuera del navegador.
 """
@@ -23,23 +23,51 @@ REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 PKG_REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
 Q = lambda name: '{' + NS + '}' + name
 FIELDS = (
-    'TIPO_BASE','DNI','CODIGO_CLIENTE','COD_CLIENTE_CRM','CUENTA',
-    'NUMERO_ADICIONALES_QUE_APLICA','NOMBRE_TC','METAL','HRE_ACTIVO',
-    'ASISTENCIA_VIP_ACTIVO','VAP_ACTIVO','TASA_EXTRA','MONTO_OFERTA_EXTRA',
-    'TASA_INTRA','MONTO_OFERTA_INTRA','MONTO_OFERTA_CC','RANGO_TASA_EXTRA',
-    'ID_AREA','MES_BASE','MAIL','LIMITE','FLAG_FINAL_PAGO_CONTADO',
-    'FLAG_EMPLEADO','ID_ORDEN_CRM','TIPO_FINANCIAMIENTO','FECHA_COMPRA',
-    'PLAZO','CUENTA_DESTINO','MONTO','COMERCIO','NOMBRE_CLIENTE',
-    'CATEGORIA','PAGO_IMPUESTO'
+    'TIPO_BASE','DNI','CODIGO_CLIENTE','COD_CLIENTE_CRM',
+    'CUENTA','NUMERO_ADICIONALES_QUE_APLICA','NOMBRE_TC','METAL',
+    'HRE_ACTIVO','ASISTENCIA_VIP_ACTIVO','VAP_ACTIVO','TASA_EXTRA',
+    'MONTO_OFERTA_EXTRA','TASA_INTRA','MONTO_OFERTA_INTRA','MONTO_OFERTA_CC',
+    'RANGO_TASA_EXTRA','ID_AREA','MES_BASE','MAIL',
+    'LIMITE','FLAG_FINAL_PAGO_CONTADO','FLAG_EMPLEADO','ID_ORDEN_CRM',
+    'TIPO_FINANCIAMIENTO','FECHA_COMPRA','PLAZO','CUENTA_DESTINO',
+    'MONTO','COMERCIO','NOMBRE_CLIENTE','CATEGORIA',
+    'PAGO_IMPUESTO','COTIZACION','OFERTA_CRM','FLAG1',
+    'COLOR_ACTUAL','LIMITE_NUEVO_USD','COLOR_NUEVO','DIFERENCIA',
+    'CANTIDAD_TC','TC_INGRESADA'
 )
-VARCHAR = {'DNI','CODIGO_CLIENTE','COD_CLIENTE_CRM','CUENTA','ID_ORDEN_CRM','CUENTA_DESTINO'}
-NVARCHAR = set(FIELDS) - VARCHAR
-DECIMAL_19 = {'MONTO_OFERTA_EXTRA','MONTO_OFERTA_INTRA','MONTO_OFERTA_CC','LIMITE','MONTO','PAGO_IMPUESTO'}
+# Aliases documentados en la hoja «campos» del ejemplo de bases TLV.
+# Solo columnas con semantica equivalente; NO ignorar otras columnas.
+ALIASES = {
+    'COD_CLIENTE_IBS': 'CODIGO_CLIENTE',
+    'COD_IBS': 'CODIGO_CLIENTE',
+    'COD_CLIENTE_EMPRESA': 'CODIGO_CLIENTE',
+    'IDENTIDAD': 'DNI',
+    'CUENTA_TC': 'CUENTA',
+    'NUM_CUENTA': 'CUENTA',
+    'NOMBRE_COMPLETO': 'NOMBRE_CLIENTE',
+    'NOMBRE_REFERENCIA': 'NOMBRE_CLIENTE',
+    'PRODUCTO': 'NOMBRE_TC',
+    'TIPO_TARJETA': 'NOMBRE_TC',
+    'DESCRIPCION_SISCARD': 'NOMBRE_TC',
+    'NOMBRE_PRODUCTO': 'NOMBRE_TC',
+    'CORREO_REAL': 'MAIL',
+    'CORREO_CRM': 'MAIL',
+    'EMAIL': 'MAIL',
+    'LIMITE_ACTUAL': 'LIMITE',
+    'LIMITE_INTER': 'LIMITE',
+    'LIMITE_LPS': 'LIMITE',
+    'PAGO_IMPUESTOS': 'PAGO_IMPUESTO',
+    '80_A_FINANCIAR': 'MONTO',
+}
+MAX_INPUT_COLUMNS = 100
+VARCHAR = {'DNI','CODIGO_CLIENTE','COD_CLIENTE_CRM','CUENTA','ID_ORDEN_CRM','CUENTA_DESTINO','COTIZACION','OFERTA_CRM','TC_INGRESADA'}
+DECIMAL_19 = {'MONTO_OFERTA_EXTRA','MONTO_OFERTA_INTRA','MONTO_OFERTA_CC','LIMITE','MONTO','PAGO_IMPUESTO','LIMITE_NUEVO_USD','DIFERENCIA'}
 DECIMAL_9 = {'TASA_EXTRA','TASA_INTRA'}
-INTEGERS = {'PLAZO'}
+INTEGERS = {'PLAZO','CANTIDAD_TC'}
 DATES = {'MES_BASE','FECHA_COMPRA'}
-TEXT_EXTRA_VARCHAR = {'COTIZACION','OFERTA_CRM','TC_INGRESADA'}
+NVARCHAR = set(FIELDS) - VARCHAR
 NUMERIC = DECIMAL_19 | DECIMAL_9 | INTEGERS
+
 DATE_MIN, DATE_MAX = date(1900,1,1), date(9999,12,31)
 
 
@@ -95,49 +123,56 @@ def shared_strings(z: ZipFile) -> list[str]:
 
 
 def xlsx_rows(path: Path, sheet_name: str):
+    """Leer encabezados variables: se admiten columnas opcionales ausentes."""
     with ZipFile(path) as z:
         names = z.namelist()
         if any(n.startswith('/') or '..' in PurePosixPath(n).parts for n in names):
             raise ValueError('Rutas ZIP inválidas.')
         sheet, epoch1904 = sheet_path(z, sheet_name)
         strings = shared_strings(z)
+        width = None
         with z.open(sheet) as fp:
             for _, elem in ET.iterparse(fp, events=('end',)):
                 if elem.tag != Q('row'):
                     continue
                 row_no = int(elem.get('r', '0'))
-                cells = [''] * len(FIELDS)
+                values = {}
+                max_idx = -1
                 for cell in elem.findall(Q('c')):
                     idx = col_index(cell.get('r', ''))
-                    if idx >= len(FIELDS):
+                    if idx >= MAX_INPUT_COLUMNS:
                         if any((node.text or '').strip() for node in cell.iter() if node.tag in (Q('t'),Q('v'))):
-                            raise ValueError('El Excel contiene datos fuera de las 33 columnas, fila ' + str(row_no))
+                            raise ValueError('El Excel supera el límite de ' + str(MAX_INPUT_COLUMNS) + ' columnas, fila ' + str(row_no))
                         continue
-                    value = cell.find(Q('v'))
+                    v = cell.find(Q('v'))
                     typ = cell.get('t', 'n')
                     if typ == 's':
-                        if value is None or value.text is None:
-                            cells[idx] = ''
-                        else:
-                            cells[idx] = strings[int(value.text)]
+                        value = strings[int(v.text)] if v is not None and v.text is not None else ''
                     elif typ == 'inlineStr':
                         inline = cell.find(Q('is'))
-                        cells[idx] = ''.join(t.text or '' for t in inline.iter(Q('t'))) if inline is not None else ''
+                        value = ''.join(t.text or '' for t in inline.iter(Q('t'))) if inline is not None else ''
                     elif typ == 'e':
                         raise ValueError('Celda con error de Excel en fila ' + str(row_no))
                     else:
-                        cells[idx] = (value.text or '') if value is not None else ''
+                        value = (v.text or '') if v is not None else ''
+                    values[idx] = value
+                    max_idx = max(max_idx, idx)
                 elem.clear()
-                yield row_no, cells, epoch1904
-
+                if width is None:
+                    width = max_idx + 1
+                    if width == 0:
+                        raise ValueError('No hay encabezados en la primera fila.')
+                elif max_idx >= width and any(str(value).strip() for idx, value in values.items() if idx >= width):
+                    raise ValueError('El Excel contiene datos fuera de los encabezados, fila ' + str(row_no))
+                yield row_no, [values.get(idx,'') for idx in range(width)], epoch1904
 
 def csv_rows(path: Path, sheet_name: str):
-    """CSV UTF-8 (with optional BOM); same 33 columns and validation as the XLSX original."""
+    """CSV UTF-8 (BOM opcional), columnas por nombre en orden variable."""
     with path.open('r', encoding='utf-8-sig', newline='') as fp:
         reader = csv.reader(fp, strict=True)
         for line_no, row in enumerate(reader, start=1):
-            if len(row) != len(FIELDS):
-                raise ValueError(f'CSV fila {line_no}: se esperaban {len(FIELDS)} columnas y hay {len(row)}')
+            if len(row) > MAX_INPUT_COLUMNS:
+                raise ValueError(f'CSV fila {line_no}: excede {MAX_INPUT_COLUMNS} columnas.')
             yield line_no, row, False
 
 
@@ -184,17 +219,34 @@ def parse_cell(field: str, raw: str, epoch1904: bool):
 
 def scanned_rows(path: Path, hoja: str, modo: str, tipo: str | None):
     it = csv_rows(path, hoja) if path.suffix.lower() == ".csv" else xlsx_rows(path, hoja)
-    first_no, header, _ = next(it)
-    header = tuple(str(v).strip() for v in header)
-    if header != FIELDS:
-        detail = [(i+1, FIELD, h) for i,(FIELD,h) in enumerate(zip(FIELDS,header)) if FIELD != h]
-        raise ValueError('Los 33 encabezados deben coincidir exactamente y en el mismo orden. Diferencias: ' + repr(detail[:5]))
+    try:
+        first_no, header, _ = next(it)
+    except StopIteration:
+        raise ValueError('El archivo no tiene encabezados.')
+    original = [str(v).strip().lstrip('\ufeff').upper() for v in header]
+    normalized = [ALIASES.get(name, name) for name in original]
+    unknown = [name for name in original if ALIASES.get(name,name) not in FIELDS]
+    if unknown:
+        raise ValueError('Columnas desconocidas; no se pueden omitir datos: '+repr(unknown[:12]))
+    if any(not name for name in original):
+        raise ValueError('El archivo tiene encabezados vacíos.')
+    if len(set(normalized)) != len(normalized):
+        raise ValueError('Hay encabezados duplicados o alias que apuntan al mismo campo.')
+    if 'TIPO_BASE' not in normalized:
+        raise ValueError('Falta la columna obligatoria TIPO_BASE.')
+    if not any(name in normalized for name in ('DNI','CODIGO_CLIENTE','CUENTA')):
+        raise ValueError('El archivo requiere una columna DNI, CODIGO_CLIENTE o CUENTA.')
+    location = {field:idx for idx,field in enumerate(normalized)}
     for row_no, cells, epoch1904 in it:
+        if len(cells)>len(normalized) and any(str(x).strip() for x in cells[len(normalized):]):
+            raise ValueError('Fila '+str(row_no)+': datos fuera de los encabezados.')
         if not any(str(v).strip() for v in cells):
             continue
         values = []
         errors = []
-        for field, raw in zip(FIELDS,cells):
+        for field in FIELDS:
+            idx = location.get(field)
+            raw = cells[idx] if idx is not None and idx < len(cells) else ''
             try:
                 values.append(parse_cell(field, raw, epoch1904))
             except ValueError as e:
