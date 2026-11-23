@@ -83,13 +83,18 @@ export class CatalogController {
   const result=limited(filters.result,30,'Resultado');
   const actor=limited(filters.actor,120,'Usuario');
   const offset=(page-1)*pageSize;
+  const requestedSnapshot=filters.snapshotId;
+  if(requestedSnapshot!=null && !/^[1-9]\d{0,14}$/.test(requestedSnapshot))
+   throw new BadRequestException('Punto de corte inválido.');
   await this.db.query(`INSERT core.audit_events(action,result,user_id,correlation_id) VALUES('AUDIT.READ','SUCCESS',@userId,@correlation)`,{userId:req.user.id,correlation:req.correlation});
-  const params={dateFrom,dateTo,search,action,result,actor,offset,pageSize};
+  const latest=await this.db.query<{maxId:number}>('SELECT MAX(id) AS maxId FROM core.audit_events');
+  const snapshotId=requestedSnapshot?Number(requestedSnapshot):Number(latest.recordset[0]?.maxId??0);
+  const params={dateFrom,dateTo,search,action,result,actor,offset,pageSize,snapshotId};
   const base=`
    FROM core.audit_events ae
    LEFT JOIN core.users u ON u.id=ae.user_id
    LEFT JOIN core.local_credentials lc ON lc.user_id=ae.user_id
-   WHERE (@dateFrom IS NULL OR ae.created_at>=CONVERT(date,@dateFrom,23))
+   WHERE ae.id<=@snapshotId AND (@dateFrom IS NULL OR ae.created_at>=CONVERT(date,@dateFrom,23))
      AND (@dateTo IS NULL OR ae.created_at<DATEADD(day,1,CONVERT(date,@dateTo,23)))
      AND (@search='' OR ae.action LIKE '%'+@search+'%' OR COALESCE(ae.resource_type,'') LIKE '%'+@search+'%'
           OR COALESCE(ae.resource_id,'') LIKE '%'+@search+'%')
@@ -107,6 +112,6 @@ export class CatalogController {
    OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
   `,params);
   const total=Number(count.recordset[0]?.total??0);
-  return {rows:rows.recordset,page,pageSize,total,hasMore:offset+rows.recordset.length<total};
+  return {rows:rows.recordset,page,pageSize,total,snapshotId,hasMore:offset+rows.recordset.length<total};
  }
 }
