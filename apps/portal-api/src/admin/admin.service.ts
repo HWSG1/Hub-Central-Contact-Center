@@ -31,13 +31,6 @@ export class AdminService {
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
-   // Fallar antes de registrar un módulo TLV si falta su instalador autorizado.
-   if(manifest.id==='OFERTAS_TLV'){
-    const tlv=(await q<{ready:number}>(
-     "SELECT CASE WHEN OBJECT_ID(N'core.prepare_tlv_auditoria_v1',N'P') IS NULL THEN 0 ELSE 1 END AS ready"
-    )).recordset[0];
-    if(!tlv?.ready)throw new ConflictException('Falta la actualización 010 del Hub para preparar automáticamente la auditoría TLV. Solicita revisión del DBA.');
-   }
    const existing=(await q<{module_id:string;version:string;manifest:string;installation_id:string;state:string}>(
     `SELECT TOP(1) m.id AS module_id,v.version,v.manifest,i.id AS installation_id,i.state
      FROM core.modules m
@@ -45,6 +38,16 @@ export class AdminService {
      JOIN core.module_installations i ON i.version_id=v.id
      JOIN core.module_packages p ON p.version_id=v.id
      WHERE m.code=@code ORDER BY i.created_at DESC,i.id DESC`,{code:manifest.id})).recordset[0];
+   // La migracion 010 es necesaria SOLO para una instalacion nueva de TLV.
+   // Actualizar un modulo ya instalado requiere el mismo backend, consultas y
+   // esquema de tablas; el cambio permitido es exclusivamente frontend.
+   // No se debe ejecutar DDL sobre una base productiva por un cambio visual.
+   if(manifest.id==='OFERTAS_TLV'&&!existing){
+    const tlv=(await q<{ready:number}>(
+     "SELECT CASE WHEN OBJECT_ID(N'core.prepare_tlv_auditoria_v1',N'P') IS NULL THEN 0 ELSE 1 END AS ready"
+    )).recordset[0];
+    if(!tlv?.ready)throw new ConflictException('Falta la actualización 010 del Hub para preparar automáticamente la auditoría TLV. Solicita revisión del DBA.');
+   }
    let changeType:'NEW'|'FRONTEND_UPGRADE'='NEW';
    if(existing){
     upgrade=true;wasPublished=existing.state==='PUBLISHED';changeType='FRONTEND_UPGRADE';
@@ -71,10 +74,9 @@ export class AdminService {
      await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
      await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
     }
-    // Contrato de instalacion preaprobado: TLV prepara auditoria sin aceptar
-    // instrucciones SQL provenientes del paquete ZIP. Se ejecuta en la misma
-    // transaccion que el alta/actualizacion del modulo (rollback ante fallo).
-    if(manifest.id==='OFERTAS_TLV')
+    // La preparación SQL fija solo se aplica en instalaciones NUEVAS de TLV.
+    // Una actualización de interfaz no modifica ningún objeto de SQL Server.
+    if(manifest.id==='OFERTAS_TLV'&&!existing)
      await q('EXEC core.prepare_tlv_auditoria_v1;');
     await q('INSERT core.module_versions(id,module_id,version,manifest,artifact_sha256) VALUES(@id,@module,@version,@manifest,@hash)',{id:versionId,module:existing?.module_id??id,version:manifest.version,manifest:JSON.stringify(manifest),hash:pkg.sha256});
     await q('INSERT core.module_packages(version_id,archive) VALUES(@version,@archive)',{version:versionId,archive:pkg.bytes});
