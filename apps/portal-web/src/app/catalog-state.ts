@@ -21,6 +21,7 @@ export class CatalogState {
  readonly error=signal('');
  private pending=signal<Set<string>>(new Set<string>());
  private inflight:Promise<void>|null=null;
+ private revision=0;
 
  busy(id:string){return this.pending().has(id);}
 
@@ -28,14 +29,18 @@ export class CatalogState {
   if(this.inflight)return this.inflight;
   if(this.loaded()&&!force)return Promise.resolve();
   this.loading.set(true);this.error.set('');
+  const revision=this.revision;
   this.inflight=firstValueFrom(this.http.get<CatalogEntry[]>('/api/catalog')).then(rows=>{
+   if(revision!==this.revision)return;
    this.entries.set(rows);
    this.loaded.set(true);
   }).catch(()=>{
+   if(revision!==this.revision)return;
    this.entries.set([]);
    this.loaded.set(false);
    this.error.set('No se pudo consultar el catálogo de aplicaciones.');
   }).finally(()=>{
+   if(revision!==this.revision)return;
    this.loading.set(false);
    this.inflight=null;
   });
@@ -45,19 +50,22 @@ export class CatalogState {
  async setFavorite(entry:CatalogEntry):Promise<void>{
   if(this.pending().has(entry.id))return;
   const next=!entry.is_favorite;
+  const revision=this.revision;
   this.pending.update(current=>new Set([...current,entry.id]));
   this.error.set('');
   try{
    await firstValueFrom(this.http.put('/api/catalog/'+encodeURIComponent(entry.id)+'/favorite',{favorite:next}));
-   this.entries.update(rows=>rows.map(e=>e.id===entry.id?{...e,is_favorite:next}:e));
+   if(revision===this.revision)this.entries.update(rows=>rows.map(e=>e.id===entry.id?{...e,is_favorite:next}:e));
   }catch{
-   this.error.set('No se pudo guardar el acceso rápido. Intenta nuevamente.');
+   if(revision===this.revision)this.error.set('No se pudo guardar el acceso rápido. Intenta nuevamente.');
   }finally{
-   this.pending.update(current=>{const updated=new Set(current);updated.delete(entry.id);return updated;});
+   if(revision===this.revision)this.pending.update(current=>{const updated=new Set(current);updated.delete(entry.id);return updated;});
   }
  }
 
  clear(){
+  this.revision++;
+  this.inflight=null;
   this.entries.set([]);this.loaded.set(false);this.loading.set(true);this.error.set('');
   this.pending.set(new Set<string>());
  }
