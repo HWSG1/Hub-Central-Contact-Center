@@ -1,4 +1,4 @@
-import {Component,inject,signal} from '@angular/core';
+import {Component,ElementRef,ViewChild,inject,signal} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {HttpClient,HttpErrorResponse} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
@@ -16,7 +16,18 @@ type Outcome={ok:boolean;file:string;sha256:string;valid:number;rejected:number;
 @if(notice()){<p class="admin-notice" role="status">{{notice()}}</p>}
 <section class="admin-panel tlv-import-card">
  <div class="admin-card-title"><div><h2>Nueva base de Televentas</h2><p class="admin-help">Selecciona el consolidado de 33 columnas. La nueva carga sustituirá toda la base activa; la anterior se conserva inactiva para auditoría.</p></div></div>
- <div class="tlv-file-row"><label for="tlv-file">Archivo Excel (.xlsx) o CSV (.csv)</label><input id="tlv-file" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" [disabled]="busy()" (change)="select($event)"></div>
+ <div class="tlv-file-row">
+  <strong id="tlv-file-label">Archivo Excel (.xlsx) o CSV (.csv)</strong>
+  <div class="tlv-file-picker">
+   <label class="tlv-upload-button" for="tlv-file" [class.tlv-upload-disabled]="busy()" role="button" tabindex="0" (keydown.enter)="openFilePicker()" (keydown.space)="$event.preventDefault();openFilePicker()">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/></svg>
+    Seleccionar Excel o CSV
+   </label>
+   <input #filePicker class="tlv-hidden-file" id="tlv-file" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-labelledby="tlv-file-label" [disabled]="busy()" (change)="select($event)">
+   <span class="tlv-file-choice">{{file()?.name||'Ningún archivo seleccionado'}}</span>
+  </div>
+  <small class="tlv-upload-hint">Primero selecciona tu archivo. Después pulsa «Previsualizar archivo»; si la validación es correcta, aparecerá «Activar nueva base».</small>
+ </div>
  @if(file()){<p class="muted">Archivo seleccionado: <strong>{{file()!.name}}</strong> · {{(file()!.size/1048576).toFixed(2)}} MB</p>}
  <div class="admin-policy"><strong>Seguridad de la operación:</strong> primero se valida el archivo sin modificar SQL Server. Solo al confirmar se insertan los nuevos registros inactivos y, una vez completos, se activa el nuevo lote y se inactiva el anterior. Cada operación registra usuario, fecha y resultado.</div>
  <div class="admin-actions"><button type="button" class="admin-primary" (click)="previsualizar()" [disabled]="!file()||busy()">{{busy()?'Procesando archivo…':'1. Previsualizar archivo'}}</button></div>
@@ -45,9 +56,11 @@ type Outcome={ok:boolean;file:string;sha256:string;valid:number;rejected:number;
  }@else{<p class="admin-help">Cargando historial de bases…</p>}
 </section>
 `,styles:[`
-:host{display:block}.tlv-import-card,.tlv-history{margin-top:1rem}.tlv-file-row{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}.tlv-file-row label{font-weight:700}.tlv-file-row input{font:inherit;width:100%;max-width:42rem}.tlv-import-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.75rem;margin:1.25rem 0}.tlv-import-stats>div{border:1px solid var(--border);border-radius:.75rem;padding:1rem;background:var(--bg);display:flex;flex-direction:column;gap:.3rem;overflow-wrap:anywhere}.tlv-import-stats strong{font-size:1.18rem}.tlv-import-stats span{font-size:.77rem;color:var(--sub)}.tlv-preview{border-top:1px solid var(--border);margin-top:1.4rem;padding-top:1.2rem}.tlv-preview details{margin-top:.75rem}.tlv-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow-y:auto;font-size:.75rem;line-height:1.5;padding:.75rem;background:var(--bg)}.tlv-confirm{margin-top:1.25rem;padding:1rem;border:1px solid var(--border);border-radius:.75rem}.tlv-confirm p{margin-bottom:.6rem}.tlv-confirm label{display:block;font-weight:700;margin:0 0 .5rem}.tlv-confirm input{display:block;padding:.6rem;max-width:20rem;width:100%;margin-bottom:.8rem;border:1px solid var(--border);border-radius:.5rem}.tlv-import-card .admin-policy{margin:1rem 0}.tlv-history td strong,.tlv-history td small{display:block}@media(max-width:640px){.tlv-import-stats{grid-template-columns:1fr}}
+:host{display:block}.tlv-import-card,.tlv-history{margin-top:1rem}.tlv-file-row{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}.tlv-file-row strong{font-weight:700}.tlv-file-picker{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.tlv-file-row .tlv-upload-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:#da282d;color:#fff;border-radius:9px;padding:11px 17px;font-weight:700;font-size:.91rem;cursor:pointer;min-height:44px;box-shadow:0 2px 6px #da282d14}.tlv-upload-button:hover{background:#bf2025}.tlv-upload-button:focus-visible{outline:3px solid #f0696e;outline-offset:3px}.tlv-upload-disabled{opacity:.5;cursor:not-allowed}.tlv-file-choice{font-size:.86rem;color:var(--sub);overflow-wrap:anywhere}.tlv-upload-hint{font-size:.77rem;color:var(--sub);line-height:1.5}.tlv-hidden-file{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.tlv-import-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.75rem;margin:1.25rem 0}.tlv-import-stats>div{border:1px solid var(--border);border-radius:.75rem;padding:1rem;background:var(--bg);display:flex;flex-direction:column;gap:.3rem;overflow-wrap:anywhere}.tlv-import-stats strong{font-size:1.18rem}.tlv-import-stats span{font-size:.77rem;color:var(--sub)}.tlv-preview{border-top:1px solid var(--border);margin-top:1.4rem;padding-top:1.2rem}.tlv-preview details{margin-top:.75rem}.tlv-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow-y:auto;font-size:.75rem;line-height:1.5;padding:.75rem;background:var(--bg)}.tlv-confirm{margin-top:1.25rem;padding:1rem;border:1px solid var(--border);border-radius:.75rem}.tlv-confirm p{margin-bottom:.6rem}.tlv-confirm label{display:block;font-weight:700;margin:0 0 .5rem}.tlv-confirm input{display:block;padding:.6rem;max-width:20rem;width:100%;margin-bottom:.8rem;border:1px solid var(--border);border-radius:.5rem}.tlv-import-card .admin-policy{margin:1rem 0}.tlv-history td strong,.tlv-history td small{display:block}@media(max-width:640px){.tlv-import-stats{grid-template-columns:1fr}}
 `]})
 export class TlvBases {
+ @ViewChild('filePicker') filePicker?:ElementRef<HTMLInputElement>;
+ openFilePicker(){if(!this.busy())this.filePicker?.nativeElement.click();}
  private http=inject(HttpClient);
  auth=inject(Auth);
  file=signal<File|null>(null);preview=signal<Outcome|null>(null);history=signal<History|null>(null);
