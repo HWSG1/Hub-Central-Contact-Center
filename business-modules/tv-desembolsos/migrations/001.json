@@ -6,17 +6,17 @@
         {
           "name": "certificado",
           "type": "varchar(40)",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "tipo_venta",
           "type": "nvarchar(300)",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "tipo_desembolso",
           "type": "nvarchar(300)",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "fecha_desembolso",
@@ -26,7 +26,7 @@
         {
           "name": "registrado_por",
           "type": "nvarchar(300)",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "correo_origen",
@@ -51,6 +51,16 @@
         {
           "name": "observacion_origen",
           "type": "nvarchar(2000)",
+          "nullable": true
+        },
+        {
+          "name": "cuenta_tc_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "fecha_creacion_origen",
+          "type": "nvarchar(300)",
           "nullable": true
         }
       ],
