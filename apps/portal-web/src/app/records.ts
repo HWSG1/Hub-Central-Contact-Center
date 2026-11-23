@@ -14,7 +14,7 @@ interface AuditPage {rows:AuditRow[];page:number;pageSize:number;total:number;sn
 
 @Component({imports:[DatePipe],template:`
 <div class="page-kicker">GOBIERNO · PLATAFORMA</div>
-<div class="page-heading"><div><h1>Auditoría</h1><p>Consulta los eventos registrados por el Hub, con filtros aplicados desde SQL Server.</p></div></div>
+<div class="page-heading"><div><h1>Auditoría</h1><p>Consulta los eventos registrados por el Hub. Las fechas se interpretan en horario de Honduras (UTC−06).</p></div></div>
 <div class="admin-panel audit-filter-panel">
  <form (submit)="apply($event)">
   <div class="audit-filter-grid">
@@ -51,7 +51,7 @@ interface AuditPage {rows:AuditRow[];page:number;pageSize:number;total:number;sn
     <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Resultado</th><th>Recurso</th><th>Detalle</th></tr></thead>
     <tbody>@for(row of rows();track row.id){
      <tr>
-      <td>{{row.created_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+      <td>{{row.created_at | date:'dd/MM/yyyy HH:mm:ss':'-0600'}}</td>
       <td><strong>{{row.actor}}</strong><small>{{row.usuario||'—'}}</small></td>
       <td><code>{{row.action}}</code></td>
       <td><span class="audit-result" [class.denied]="row.result!=='SUCCESS'">{{row.result}}</span></td>
