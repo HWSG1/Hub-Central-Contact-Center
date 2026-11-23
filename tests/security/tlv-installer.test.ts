@@ -9,7 +9,7 @@ import {resolve} from 'node:path';
 const root=process.cwd();
 const read=(path:string)=>readFileSync(resolve(root,path),'utf8');
 const require=createRequire(resolve(root,'package.json'));
-const builder=require('../../scripts/build-install-sql.cjs') as {
+const builder=require(resolve(root,'scripts/build-install-sql.cjs')) as {
  readMigrations:()=>Array<{name:string;hash:string;source:string}>;
  render:(migrations:Array<{name:string;hash:string;source:string}>)=>string;
 };
