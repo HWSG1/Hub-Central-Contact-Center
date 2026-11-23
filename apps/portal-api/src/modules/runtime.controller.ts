@@ -32,6 +32,10 @@ export class PackageRuntimeController {
    });
    await this.authorize(req,code);
    await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,details) VALUES(@actor,'MODULE.EXECUTE','SUCCESS',@correlation,'module',@details)",{actor:req.user.id,correlation:req.correlation,details:JSON.stringify({code,operation})});return {result};
-  }catch{throw new ServiceUnavailableException('No se pudo ejecutar el módulo. Revisa sus parámetros y la configuración del ejecutor.');}
+  }catch(error){
+   const safe=['El certificado debe contener exactamente 9 dígitos.','Tipo de venta inválido.','Tipo de desembolso inválido.','Fecha de desembolso inválida.','El certificado ya está registrado.','Período inválido.','Página inválida.','Campos no admitidos.','Filtro inválido.'];
+   if(error instanceof Error&&safe.includes(error.message))throw new BadRequestException(error.message);
+   throw new ServiceUnavailableException('No se pudo ejecutar el módulo. Revisa sus parámetros y la configuración del ejecutor.');
+  }
  }
 }
