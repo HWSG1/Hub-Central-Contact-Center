@@ -37,5 +37,5 @@ export class Records {
   });
  }
  header(s:string){return s.replaceAll('_',' ');}
- value(v:unknown){return v==null?'—':typeof v==='object'?JSON.stringify(v):String(v);}
+ value(v:unknown){return v==null?'—':typeof v==='object'?(JSON.stringify(v)??'—'):String(v);}
 }
