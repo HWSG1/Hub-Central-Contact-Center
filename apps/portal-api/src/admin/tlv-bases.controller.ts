@@ -85,10 +85,13 @@ export class TlvBasesController {
   if(!/^[a-zA-Z0-9_(). \-]{1,120}\.(xlsx|csv)$/i.test(name))
    throw new BadRequestException('El nombre debe corresponder a un archivo .xlsx o .csv válido.');
   if(uploading)throw new ConflictException('Ya existe una carga en proceso. Intenta nuevamente cuando termine.');
-  const bytes=await binaryFile(req);
-  if(extname(name).toLowerCase()==='.xlsx'&&!(bytes[0]===0x50&&bytes[1]===0x4b))
-   throw new BadRequestException('El archivo Excel no es un XLSX válido.');
   uploading=true;
+  let bytes:Buffer;
+  try{
+   bytes=await binaryFile(req);
+   if(extname(name).toLowerCase()==='.xlsx'&&!(bytes[0]===0x50&&bytes[1]===0x4b))
+    throw new BadRequestException('El archivo Excel no es un XLSX válido.');
+  }catch(error){uploading=false;throw error;}
   let directory='';
   const hash=createHash('sha256').update(bytes).digest('hex');
   const identity=req.user.id+':'+req.sessionHash;
