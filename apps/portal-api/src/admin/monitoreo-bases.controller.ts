@@ -51,8 +51,8 @@ export class MonitoreoBasesController {
   const session=(await this.db.query<{created_at:Date}>(
    'SELECT created_at FROM core.sessions WHERE token_hash=@hash AND user_id=@user AND revoked_at IS NULL',
    {hash:req.sessionHash,user:req.user.id})).recordset[0];
-  if(!session||Date.now()-new Date(session.created_at).getTime()>15*60*1000)
-   throw new ForbiddenException('Inicia nuevamente sesión con MFA para importar bases (15 minutos).');
+  if(!session||Date.now()-new Date(session.created_at).getTime()>8*60*60*1000)
+   throw new ForbiddenException('Inicia nuevamente sesión con MFA para importar bases (8 horas).');
   const ready=(await this.db.query<{ready:number}>(`
    SELECT CASE WHEN OBJECT_ID(N'core.monitoreo_tc_importar',N'P') IS NOT NULL AND
     OBJECT_ID(N'core.monitoreo_tc_cargas',N'U') IS NOT NULL AND
