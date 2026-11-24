@@ -18,7 +18,8 @@ export function compileQuery(code:string,queries:Queries,name:string,value:unkno
  let page=0;if(query.page){if(!Number.isInteger(input.page)||Number(input.page)<0||Number(input.page)>10000)throw Error('Página inválida.');page=Number(input.page);}params.offset=page*50;
  // Names originate solely from the signed, schema-validated declaration.
  const columns=query.columns.map(c=>c.toLowerCase()==='id'?`CONVERT(varchar(20),[${c}]) AS [${c}]`:`[${c}]`).join(',');
- return {sql:`SELECT ${columns} FROM [mod_${code.toLowerCase()}].[${query.table}]${filters.length?' WHERE '+filters.join(' AND '):''} ORDER BY [id] OFFSET @offset ROWS FETCH NEXT ${query.page?51:1} ROWS ONLY`,params};
+ const order=code==='MONITOREO_TC'&&query.table==='alertas'?'[fecha_evento] DESC,[fecha_hora_origen] DESC,[id] DESC':'[id]';
+ return {sql:`SELECT ${columns} FROM [mod_${code.toLowerCase()}].[${query.table}]${filters.length?' WHERE '+filters.join(' AND '):''} ORDER BY ${order} OFFSET @offset ROWS FETCH NEXT ${query.page?51:1} ROWS ONLY`,params};
 }
 
 export function compileInsert(code:string,queries:Queries,name:string,value:unknown,actor:string){
