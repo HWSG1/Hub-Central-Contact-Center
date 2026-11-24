@@ -52,7 +52,7 @@ jobs:
       - name: Ejecutar pruebas de seguridad
         run: npm test
       - name: Verificar sintaxis de importadores Python
-        run: python -m py_compile apps/portal-api/scripts/tlv-import.py business-modules/tv-desembolsos/scripts/importar_historico.py
+        run: python -m py_compile apps/portal-api/scripts/tlv-import.py apps/portal-api/scripts/monitoreo-import.py business-modules/tv-desembolsos/scripts/importar_historico.py
       - name: Crear editor temporal solo QA
         run: npm run modules:publisher
       - name: Generar ZIP TV_DESEMBOLSOS firmado solo QA
