@@ -135,6 +135,7 @@ export class MonitoreoBasesController {
   if(processing)throw new ConflictException('Hay una carga en proceso.');
   processing=true;
   let directory='';
+  let stage='read_file';
   try{
    const bytes=await receive(req);
    const sha=createHash('sha256').update(bytes).digest('hex');
@@ -142,16 +143,20 @@ export class MonitoreoBasesController {
    const token=previews.get(key);
    if(commit&&(!token||token.expires<Date.now()||token.sha!==sha))
     throw new ConflictException('Previsualiza nuevamente el mismo archivo antes de activarlo.');
+   stage='prepare_temp';
    directory=await mkdtemp(join(tmpdir(),'monitoreo-tc-'));
    const input=join(directory,filename),output=join(directory,randomUUID()+'.json');
    await writeFile(input,bytes,{mode:0o600,flag:'wx'});
    bytes.fill(0);
+   stage='validate_python';
    await parse(input,output);
+   stage='read_validation';
    const parsed=JSON.parse(await readFile(output,'utf8')) as Parsed;
    if(!Number.isInteger(parsed.valid)||parsed.valid<1||parsed.valid>50000||!Array.isArray(parsed.rows)||parsed.rows.length!==parsed.valid)
     throw new BadRequestException('El lote no cumple los límites.');
    if(!commit){
     previews.set(key,{sha,valid:parsed.valid,expires:Date.now()+10*60*1000});
+    stage='audit_preview';
     await this.db.query(`INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,details)
      VALUES(@user,'MONITOREO_TC.BASE.PREVIEW','SUCCESS',@correlation,'monitoreo_tc',@details)`,{
       user:req.user.id,correlation:req.correlation,details:JSON.stringify({file:filename,sha256:sha,valid:parsed.valid,
@@ -161,6 +166,7 @@ export class MonitoreoBasesController {
    }
    if(token!.valid!==parsed.valid)throw new ConflictException('El archivo cambió desde la previsualización.');
    await this.ensureReady(req); // Revalidar sesión fresca después del análisis del archivo.
+   stage='activate_sql';
    const result=(await this.db.query<{carga_id:string;insertados:number;omitidos:number}>(`
     EXEC core.monitoreo_tc_importar @usuario=@usuario,@correlation=@correlation,@archivo=@archivo,@sha256=@sha256,
       @datos=@datos,@esperados=@esperados`,{
@@ -172,7 +178,13 @@ export class MonitoreoBasesController {
   }catch(error){
    if(error instanceof BadRequestException||error instanceof ConflictException||
      error instanceof ForbiddenException)throw error;
-   throw new ServiceUnavailableException('No se pudo completar la carga. Verifica SQL, formato y registros.');
+   // No registrar valores, rutas ni contenidos del archivo. Solo la fase y clase del error.
+   console.error('[MONITOREO_TC] Importación fallida:',{
+    stage,kind:error instanceof Error?error.name:typeof error,
+    sqlNumber:typeof (error as {number?:unknown})?.number==='number'?(error as {number:number}).number:undefined
+   });
+   if(error instanceof ServiceUnavailableException)throw error;
+   throw new ServiceUnavailableException('Error durante '+stage+'. Revisa la bitácora MONITOREO_TC del backend.');
   }finally{
    if(directory)await rm(directory,{recursive:true,force:true,maxRetries:4,retryDelay:100}).catch(()=>{});
    processing=false;
