@@ -8,8 +8,8 @@ import {Auth} from '../auth';
 type Preview={ok:boolean;archivo:string;validos:number;duplicados_archivo:number;ignorados:number;activada:boolean;insertados?:number;omitidos?:number;carga_id?:string};
 type HistoryRow={carga_id:string;archivo:string;fecha_carga:string;registros_archivo:number;insertados:number;omitidos:number;estado:string;responsable:string};
 @Component({imports:[RouterLink,DatePipe],template:`
-<nav class="breadcrumb"><a routerLink="/extensions/MONITOREO_TC">Monitoreo TC</a><span>/</span>Administrar bases</nav>
-<header class="page-heading"><div><p class="eyebrow">MONITOREO TC · ADMINISTRACIÓN</p><h1>Administrar bases de alertas</h1>
+
+<header class="page-heading"><div><h1>Administrar bases de alertas</h1>
 <p>Importaciones acumulativas: conservan todos los registros históricos y evitan duplicados por ID_TRX.</p></div></header>
 @if(error()){<div class="error-message" role="alert">{{error()}}</div>}
 @if(notice()){<p role="status" class="notice">{{notice()}}</p>}
