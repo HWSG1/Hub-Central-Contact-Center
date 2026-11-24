@@ -1,15 +1,14 @@
-import {Component,inject,signal} from '@angular/core';
+import {Component,computed,inject,signal} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {HttpClient,HttpErrorResponse} from '@angular/common/http';
 import {downloadMonitoreoTemplate} from './monitoreo-template';
-import {RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {Auth} from '../auth';
 
 type Preview={ok:boolean;archivo:string;validos:number;duplicados_archivo:number;ignorados:number;activada:boolean;insertados?:number;omitidos?:number;carga_id?:string};
 type CodeRow={codigo:string;descripcion:string;accion:string;activo:boolean};
 type HistoryRow={carga_id:string;archivo:string;fecha_carga:string;registros_archivo:number;insertados:number;omitidos:number;estado:string;responsable:string};
-@Component({imports:[RouterLink,DatePipe],template:`
+@Component({imports:[DatePipe],template:`
 
 <header class="page-heading"><div><h1>Administrar bases de alertas</h1>
 <p>Importaciones acumulativas: conservan todos los registros históricos y evitan duplicados por ID_TRX.</p></div></header>
@@ -58,8 +57,9 @@ type HistoryRow={carga_id:string;archivo:string;fecha_carga:string;registros_arc
   <button (click)="saveCode()" [disabled]="busy()||!validCode()">{{editing()?'Guardar modificación':'Agregar código'}}</button>
   @if(editing()){<button class="secondary" (click)="resetCode()" [disabled]="busy()">Cancelar edición</button>}
  </div>
+ <div class="code-search"><div><label for="search-codes">Buscar código o descripción</label><input id="search-codes" type="search" placeholder="Ej. 51, fondos insuficientes" [value]="codeSearch()" (input)="setCodeSearch($any($event.target).value)"></div><p role="status">{{filteredCodes().length}} código(s) encontrado(s)</p></div>
  <div class="scroll"><table><thead><tr><th>Código</th><th>Descripción</th><th>Acción</th><th>Estado</th><th>Administración</th></tr></thead><tbody>
- @for(item of codes();track item.codigo){<tr>
+ @for(item of pagedCodes();track item.codigo){<tr>
   <td><code>{{item.codigo}}</code></td><td>{{item.descripcion}}</td>
   <td>{{item.accion==='A'?'Aprobar':'Declinar'}}</td><td>{{item.activo?'Activo':'Desactivado'}}</td>
   <td>
@@ -69,8 +69,9 @@ type HistoryRow={carga_id:string;archivo:string;fecha_carga:string;registros_arc
     @else{<button class="secondary small-btn" (click)="pendingDelete.set(item.codigo)" [disabled]="busy()">Desactivar</button>}
    }@else{<button class="secondary small-btn" (click)="reactivate(item)" [disabled]="busy()">Reactivar</button>}
   </td></tr>}
- @empty{<tr><td colspan="5">No se encontraron códigos. Verifica la migración SQL 013.</td></tr>}
+ @empty{<tr><td colspan="5">No hay códigos que coincidan con la búsqueda.</td></tr>}
  </tbody></table></div>
+ <nav class="code-pagination" aria-label="Paginación de códigos de respuesta"><button class="secondary" (click)="codePage.set(codePage()-1)" [disabled]="codePage()<=0">Anterior</button><span>Página {{codePage()+1}} de {{totalCodePages()}}</span><button class="secondary" (click)="codePage.set(codePage()+1)" [disabled]="codePage()+1>=totalCodePages()">Siguiente</button></nav>
 </section>
 `,styles:[`
 :host{display:block}.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:22px}
@@ -80,13 +81,18 @@ input{display:block;width:100%;max-width:540px;border:1px solid var(--border);pa
 button{border:1px solid #da282d;border-radius:8px;background:#da282d;color:white;padding:12px 18px;font-weight:700;margin-top:16px}
 button.secondary{background:transparent;color:var(--text);border-color:var(--border)}button.danger{background:#a91e24;border-color:#a91e24}.small-btn{margin:2px;padding:8px;font-size:12px}.code-form{display:grid;grid-template-columns:minmax(100px,1fr) minmax(250px,3fr) minmax(130px,1fr);gap:12px;align-items:end}.code-form input,.code-form select{width:100%}@media(max-width:800px){.code-form{grid-template-columns:1fr}}button:disabled{opacity:.5}.stats{display:flex;gap:16px;flex-wrap:wrap;margin:18px 0}.stats>div{flex:1;min-width:150px;background:var(--bg);border-radius:9px;padding:18px}
 .stats strong{display:block;font-size:24px}.stats small{color:var(--sub)}.history-head{display:flex;justify-content:space-between;align-items:center;gap:16px}
-.history-head button{margin:0}.notice{border:1px solid #49a98c;padding:15px;border-radius:9px}.scroll{overflow:auto}
+.history-head button{margin:0}.code-search{display:flex;gap:16px;align-items:end;justify-content:space-between;margin:16px 0}.code-search>div{flex:1}.code-search input{max-width:480px}.code-search p{margin:0 0 10px}.code-pagination{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:8px}.code-pagination button{margin-top:0}@media(max-width:600px){.code-search{display:block}}.notice{border:1px solid #49a98c;padding:15px;border-radius:9px}.scroll{overflow:auto}
 table{border-collapse:collapse;width:100%;font-size:14px;text-align:left}th,td{padding:12px;border-bottom:1px solid var(--border);white-space:nowrap}
 `]})
 export class MonitoreoBases {
  private http=inject(HttpClient);private auth=inject(Auth);
  file=signal<File|null>(null);result=signal<Preview|null>(null);history=signal<HistoryRow[]>([]);
  total=signal(0);busy=signal(false);error=signal('');notice=signal('');confirm=signal('');
+ codeSearch=signal('');codePage=signal(0);readonly codePageSize=12;
+ filteredCodes=computed(()=>{const term=this.codeSearch().trim().toLocaleLowerCase('es');return this.codes().filter(row=>!term||row.codigo.toLocaleLowerCase('es').includes(term)||row.descripcion.toLocaleLowerCase('es').includes(term));});
+ totalCodePages=computed(()=>Math.max(1,Math.ceil(this.filteredCodes().length/this.codePageSize)));
+ pagedCodes=computed(()=>this.filteredCodes().slice(this.codePage()*this.codePageSize,(this.codePage()+1)*this.codePageSize));
+ setCodeSearch(term:string){this.codeSearch.set(term);this.codePage.set(0);}
  codes=signal<CodeRow[]>([]);codeError=signal('');codeNotice=signal('');code=signal('');description=signal('');action=signal('D');editing=signal<string|null>(null);pendingDelete=signal<string|null>(null);
  constructor(){void this.load();void this.loadCodes();}
  downloadTemplate(){downloadMonitoreoTemplate();}
@@ -98,7 +104,7 @@ export class MonitoreoBases {
   if(error.status===400&&/^(Fila \\d+:|Faltan columnas requeridas|El archivo |El Excel |Fecha |No se pudo validar|Solo se permite |Nombre de archivo |Archivo inválido)/.test(message))return message.slice(0,300);
   return 'La solicitud no se completó (HTTP '+error.status+'). Revisa la sesión, el formato y los registros del servidor.';
  }
- async loadCodes(){this.codeError.set('');try{const data=await firstValueFrom(this.http.get<{codes:CodeRow[]}>('/api/admin/monitoreo-tc/bases/codes'));this.codes.set(data.codes);}catch(e){this.codeError.set(this.describeError(e));}}
+ async loadCodes(){this.codeError.set('');try{const data=await firstValueFrom(this.http.get<{codes:CodeRow[]}>('/api/admin/monitoreo-tc/bases/codes'));this.codes.set(data.codes);this.codePage.set(Math.min(this.codePage(),Math.max(0,Math.ceil(this.filteredCodes().length/this.codePageSize)-1)));}catch(e){this.codeError.set(this.describeError(e));}}
  validCode(){return /^[A-Z0-9]{1,10}$/.test(this.code())&&this.description().trim().length>0&&this.description().trim().length<=300&&['A','D'].includes(this.action());}
  resetCode(){this.editing.set(null);this.code.set('');this.description.set('');this.action.set('D');this.pendingDelete.set(null);}
  editCode(row:CodeRow){this.editing.set(row.codigo);this.code.set(row.codigo);this.description.set(row.descripcion);this.action.set(row.accion);this.pendingDelete.set(null);}
