@@ -105,8 +105,8 @@ export class MonitoreoBasesController {
     throw new BadRequestException('Operación, código, descripción o acción inválidos.');
   try{
    await this.db.query(
-    'EXEC core.monitoreo_tc_guardar_codigo @usuario=@actor,@operacion=@operation,@codigo=@code,@descripcion=@description,@accion=@action',
-    {actor:req.user.id,operation,code,description:operation==='DESACTIVAR'?null:(description as string).trim(),
+    'EXEC core.monitoreo_tc_guardar_codigo @usuario=@actor,@correlation=@correlation,@operacion=@operation,@codigo=@code,@descripcion=@description,@accion=@action',
+    {actor:req.user.id,correlation:req.correlation,operation,code,description:operation==='DESACTIVAR'?null:(description as string).trim(),
       action:operation==='DESACTIVAR'?null:action});
    return {ok:true,code,operation};
   }catch{
@@ -162,9 +162,9 @@ export class MonitoreoBasesController {
    if(token!.valid!==parsed.valid)throw new ConflictException('El archivo cambió desde la previsualización.');
    await this.ensureReady(req); // Revalidar sesión fresca después del análisis del archivo.
    const result=(await this.db.query<{carga_id:string;insertados:number;omitidos:number}>(`
-    EXEC core.monitoreo_tc_importar @usuario=@usuario,@archivo=@archivo,@sha256=@sha256,
+    EXEC core.monitoreo_tc_importar @usuario=@usuario,@correlation=@correlation,@archivo=@archivo,@sha256=@sha256,
       @datos=@datos,@esperados=@esperados`,{
-      usuario:req.user.id,archivo:filename,sha256:sha,datos:JSON.stringify(parsed.rows),esperados:parsed.valid
+      usuario:req.user.id,correlation:req.correlation,archivo:filename,sha256:sha,datos:JSON.stringify(parsed.rows),esperados:parsed.valid
     })).recordset[0];
    previews.delete(key);
    return {ok:true,archivo:filename,validos:parsed.valid,duplicados_archivo:parsed.duplicated_in_file,
