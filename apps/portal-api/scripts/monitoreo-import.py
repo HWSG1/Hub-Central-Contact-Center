@@ -92,7 +92,7 @@ def normalize(rows, max_rows=50000):
         dni=cleaned(field('S_CUSTOMER_ID'),40)
         cuenta=cleaned(field('N_ID_ACCOUNT'),40)
         pan=cleaned(field('S_PAN'),40)
-        if pan and not re.fullmatch(r'[0-9*Xx]{8,19}',pan):raise ValueError('Fila '+str(number)+': referencia PAN inválida.')
+        if pan and (not re.fullmatch(r'[0-9*Xx]{8,19}',pan) or not re.search(r'[*Xx]',pan)):\n            raise ValueError('Fila '+str(number)+': la tarjeta debe estar enmascarada; no se admite PAN completo.')
         digits=re.sub('[^0-9]','',pan or '')
         if pan and len(digits)<8:raise ValueError('Fila '+str(number)+': PAN insuficientemente identificable.')
         ref10=(digits[:6]+digits[-4:]) if pan and len(digits)>=10 else None
