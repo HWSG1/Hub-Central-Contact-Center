@@ -784,3 +784,7 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
  color:var(--sub);
  white-space:nowrap;
 }
+
+/* Espacio compacto solo para módulos empotrados; no altera pantallas administrativas. */
+.workspace-main.extension-workspace{padding:10px 16px;max-width:none}
+@media(max-width:800px){.workspace-main.extension-workspace{padding:8px}}
