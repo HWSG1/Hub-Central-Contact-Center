@@ -22,5 +22,5 @@ test('base management reauthentication is required after 8h',()=>{
   assert.doesNotMatch(source,/getTime\(\)>15\*60\*1000/);
  }
  const admin=readFileSync('apps/portal-api/src/admin/admin.service.ts','utf8');
- assert.match(admin,/permission!=='CORE\.MODULES\.MANAGE'&&Date\.now\(\)-\+new Date\(session\.created_at\)>900000/);
+ assert.match(admin,/permission==='CORE\.MODULES\.MANAGE'\?8\*60\*60\*1000:15\*60\*1000/);
 });
