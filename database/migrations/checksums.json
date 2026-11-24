@@ -10,5 +10,6 @@
   "009_favorites_runtime.sql": "c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3",
   "010_tlv_auditoria_installer.sql": "45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b",
   "011_package_append.sql": "00a2ebfa0ff5d5e7bec95e04e31ff1ea3aa4e56ca5451c7e1a127b5be9d05375",
-  "012_monitoreo_tc_cargas.sql": "3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216"
+  "012_monitoreo_tc_cargas.sql": "3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216",
+  "013_monitoreo_tc_codigos.sql": "c46eaa243e85401f523d561cf3d74ac133d72505220a65ab2e3aadf239112954"
 }
