@@ -32,7 +32,7 @@ INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c
 (N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3''),
 (N''010_tlv_auditoria_installer.sql'',N''45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b''),
 (N''011_package_append.sql'',N''00a2ebfa0ff5d5e7bec95e04e31ff1ea3aa4e56ca5451c7e1a127b5be9d05375''),
-(N''012_monitoreo_tc_cargas.sql'',N''a012ceabbd2aa9a367db3876e6c185d9d3524952729f86cf7810cd8d1cfbace4'');
+(N''012_monitoreo_tc_cargas.sql'',N''3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
 IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''ofertas'') AND name IN(N''ofertas_cliente'',N''base_tlv'') AND OBJECT_ID(N''core.install_ofertas_v1'',N''P'') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N''mod[_]%'' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N''hub_package_owner'')) AND OBJECT_ID(N''core.create_package_storage'',N''P'') IS NOT NULL) OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
@@ -677,6 +677,9 @@ EXEC sys.sp_executesql N''
 CREATE INDEX IX_monitoreo_tc_cargas_fecha ON core.monitoreo_tc_cargas(fecha_carga DESC);
 '';
 EXEC sys.sp_executesql N''
+GRANT INSERT ON core.monitoreo_tc_cargas TO hub_package_owner;
+'';
+EXEC sys.sp_executesql N''
 CREATE PROCEDURE core.monitoreo_tc_importar
  @usuario uniqueidentifier,
  @archivo nvarchar(120),
@@ -767,7 +770,7 @@ EXEC sys.sp_executesql N''
 GRANT EXECUTE ON core.monitoreo_tc_importar TO hub_runtime;
 GRANT SELECT ON core.monitoreo_tc_cargas TO hub_runtime;
 '';
- INSERT dbo.hub_migrations(name,sha256) VALUES(N''012_monitoreo_tc_cargas.sql'',N''a012ceabbd2aa9a367db3876e6c185d9d3524952729f86cf7810cd8d1cfbace4'');
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''012_monitoreo_tc_cargas.sql'',N''3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;
