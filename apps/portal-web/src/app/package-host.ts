@@ -1,15 +1,17 @@
 import {Component,ElementRef,ViewChild,inject,signal,OnDestroy} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute,RouterLink} from '@angular/router';
+import {Auth} from './auth';
 import {DomSanitizer,SafeHtml} from '@angular/platform-browser';
 import {HttpClient,HttpErrorResponse} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
 import {adminError} from './admin/models';
-@Component({template:`@if(error()){<p role="alert">{{error()}}</p>}@if(html()){<iframe #frame title="Herramienta instalada" sandbox="allow-scripts allow-downloads allow-forms" referrerpolicy="no-referrer" [srcdoc]="html()"></iframe>}`,styles:[`:host{display:block}iframe{display:block;width:100%;height:calc(100dvh - 160px);min-height:540px;border:0;border-radius:12px;background:white}`]})
+@Component({imports:[RouterLink],template:`@if(canManageBases()){<nav class="module-admin-actions"><a routerLink="/admin/monitoreo-tc/bases">Administrar bases de Monitoreo TC</a></nav>}@if(error()){<p role="alert">{{error()}}</p>}@if(html()){<iframe #frame title="Herramienta instalada" sandbox="allow-scripts allow-downloads allow-forms" referrerpolicy="no-referrer" [srcdoc]="html()"></iframe>}`,styles:[`:host{display:block}.module-admin-actions{display:flex;justify-content:flex-end;margin:0 0 12px}.module-admin-actions a{display:inline-flex;align-items:center;padding:9px 14px;border:1px solid #da282d;border-radius:8px;color:#da282d;font-weight:700}iframe{display:block;width:100%;height:calc(100dvh - 160px);min-height:540px;border:0;border-radius:12px;background:white}`]})
 export class PackageHost implements OnDestroy {
- private http=inject(HttpClient);private route=inject(ActivatedRoute);private sanitizer=inject(DomSanitizer);
+ private http=inject(HttpClient);private auth=inject(Auth);private route=inject(ActivatedRoute);private sanitizer=inject(DomSanitizer);
  @ViewChild('frame') frame?:ElementRef<HTMLIFrameElement>;
  error=signal('');html=signal<SafeHtml|null>(null);private active=0;private alive=true;
  private code=this.route.snapshot.paramMap.get('code')??'';
+ canManageBases(){return this.code==='MONITOREO_TC'&&!!this.auth.user()?.permissions.includes('CORE.MODULES.MANAGE');}
  private listener=(event:MessageEvent)=>{void this.message(event);};
  constructor(){window.addEventListener('message',this.listener);void this.load();}
  private async load(){try{const result=await firstValueFrom(this.http.get<{name:string;html:string}>('/api/extensions/'+encodeURIComponent(this.code)+'/ui'));if(!this.alive)return;const policy=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">`;this.html.set(this.sanitizer.bypassSecurityTrustHtml(policy+result.html));}catch(e){this.error.set(adminError(e));}}
