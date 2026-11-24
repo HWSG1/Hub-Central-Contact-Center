@@ -35,7 +35,8 @@ export function compileInsert(code:string,queries:Queries,name:string,value:unkn
  }
  const uniqueIndex=query.columns.indexOf(query.uniqueBy);
  const table='[mod_'+code.toLowerCase()+'].['+query.table+']';
+ const onlyOnce=code==='MONITOREO_TC'&&query.table==='codigos_respuesta'?'':' AND [activo]=1';
  const sql='INSERT INTO '+table+' ('+[...insertColumns,'['+query.actorColumn+']'].join(',')+') OUTPUT INSERTED.id SELECT '+[...values,'@actor'].join(',')+
- ' WHERE NOT EXISTS (SELECT 1 FROM '+table+' WITH (UPDLOCK,HOLDLOCK) WHERE ['+query.uniqueBy+']=@p'+uniqueIndex+' AND [activo]=1)';
+ ' WHERE NOT EXISTS (SELECT 1 FROM '+table+' WITH (UPDLOCK,HOLDLOCK) WHERE ['+query.uniqueBy+']=@p'+uniqueIndex+' '+onlyOnce+')';
  return {sql,params};
 }
