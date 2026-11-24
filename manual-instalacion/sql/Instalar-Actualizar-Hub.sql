@@ -32,7 +32,8 @@ INSERT @Manifest(name,sha256) VALUES (N''001_core.sql'',N''f70e4d57c4cd3b7956f4c
 (N''009_favorites_runtime.sql'',N''c8619df4927e25ccc7772de967f85d559f0d307bb304c48f290c434e3ad109a3''),
 (N''010_tlv_auditoria_installer.sql'',N''45d9f0dad28777dfbb8a81c1c24533a54a3aba2c0a5b3518494928e807332f7b''),
 (N''011_package_append.sql'',N''00a2ebfa0ff5d5e7bec95e04e31ff1ea3aa4e56ca5451c7e1a127b5be9d05375''),
-(N''012_monitoreo_tc_cargas.sql'',N''3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216'');
+(N''012_monitoreo_tc_cargas.sql'',N''3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216''),
+(N''013_monitoreo_tc_codigos.sql'',N''c46eaa243e85401f523d561cf3d74ac133d72505220a65ab2e3aadf239112954'');
 -- Base dedicada: no aceptar tablas ajenas al Hub.
 IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0 AND NOT(schema_id=SCHEMA_ID(N''core'') OR (schema_id=SCHEMA_ID(N''ofertas'') AND name IN(N''ofertas_cliente'',N''base_tlv'') AND OBJECT_ID(N''core.install_ofertas_v1'',N''P'') IS NOT NULL) OR (SCHEMA_NAME(schema_id) LIKE N''mod[_]%'' AND SCHEMA_ID(SCHEMA_NAME(schema_id)) IN(SELECT schema_id FROM sys.schemas WHERE principal_id=DATABASE_PRINCIPAL_ID(N''hub_package_owner'')) AND OBJECT_ID(N''core.create_package_storage'',N''P'') IS NOT NULL) OR (schema_id=SCHEMA_ID(N''dbo'') AND name=N''hub_migrations'')))
  THROW 51710,''Existen tablas ajenas al Hub. Usar una base dedicada.'',1;
@@ -771,6 +772,92 @@ GRANT EXECUTE ON core.monitoreo_tc_importar TO hub_runtime;
 GRANT SELECT ON core.monitoreo_tc_cargas TO hub_runtime;
 '';
  INSERT dbo.hub_migrations(name,sha256) VALUES(N''012_monitoreo_tc_cargas.sql'',N''3b636ce63e8a5dd3ab0d484a5f3af780d2239a972e5534340be9daa44ca02216'');
+ END;
+ IF NOT EXISTS(SELECT 1 FROM dbo.hub_migrations WHERE name=N''013_monitoreo_tc_codigos.sql'')
+ BEGIN
+ EXEC sys.sp_executesql N''-- 013: administracion auditada de codigos de respuesta de Monitoreo TC.
+-- No se altera el esquema de los paquetes firmados ni se borran eventos.
+IF OBJECT_ID(N''''mod_monitoreo_tc.codigos_respuesta'''',N''''U'''') IS NOT NULL
+BEGIN
+ GRANT SELECT ON mod_monitoreo_tc.codigos_respuesta TO hub_runtime;
+END;
+'';
+EXEC sys.sp_executesql N''
+CREATE PROCEDURE core.monitoreo_tc_guardar_codigo
+ @usuario uniqueidentifier,
+ @operacion varchar(12),
+ @codigo varchar(40),
+ @descripcion nvarchar(300)=NULL,
+ @accion varchar(40)=NULL
+WITH EXECUTE AS ''''hub_package_owner''''
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SET XACT_ABORT ON;
+ IF @usuario IS NULL OR @operacion NOT IN (''''CREAR'''',''''EDITAR'''',''''DESACTIVAR'''')
+ OR @codigo IS NULL OR LEN(@codigo) NOT BETWEEN 1 AND 10
+ OR @codigo COLLATE Latin1_General_100_BIN2 LIKE ''''%[^A-Z0-9]%''''
+ THROW 52100,''''Operacion o codigo invalido.'''',1;
+ IF @operacion<>''''DESACTIVAR''''
+ AND (@descripcion IS NULL OR LEN(LTRIM(RTRIM(@descripcion))) NOT BETWEEN 1 AND 300
+ OR @accion NOT IN (''''A'''',''''D''''))
+ THROW 52101,''''Descripcion o accion invalida.'''',1;
+ IF NOT EXISTS(
+  SELECT 1 FROM core.users u
+  JOIN core.user_roles ur ON ur.user_id=u.id
+  JOIN core.roles r ON r.id=ur.role_id AND r.enabled=1
+  JOIN core.role_permissions rp ON rp.role_id=r.id
+  JOIN core.permissions p ON p.id=rp.permission_id
+  WHERE u.id=@usuario AND u.enabled=1 AND p.code=''''CORE.MODULES.MANAGE''''
+ ) THROW 52102,''''Sin permisos de administracion.'''',1;
+ IF OBJECT_ID(N''''mod_monitoreo_tc.codigos_respuesta'''',N''''U'''') IS NULL
+ THROW 52103,''''Instala el modulo de Monitoreo TC antes de administrar codigos.'''',1;
+ BEGIN TRY
+  BEGIN TRANSACTION;
+  DECLARE @lock int,@matches int,@active int;
+  EXEC @lock=sys.sp_getapplock @Resource=N''''monitoreo.tc.codigos'''',@LockMode=''''Exclusive'''',@LockOwner=''''Transaction'''',@LockTimeout=10000;
+  IF @lock<0 THROW 52104,''''Otra modificacion esta en curso.'''',1;
+  SELECT @matches=COUNT(*),@active=COALESCE(SUM(CASE WHEN activo=1 THEN 1 ELSE 0 END),0)
+    FROM mod_monitoreo_tc.codigos_respuesta WITH(UPDLOCK,HOLDLOCK) WHERE codigo=@codigo;
+  IF @matches>1 THROW 52105,''''Existen codigos repetidos; requiere revision del administrador.'''',1;
+  IF @operacion=''''CREAR''''
+  BEGIN
+    IF @active>0 THROW 52106,''''El codigo ya existe.'''',1;
+    IF @matches=1
+      UPDATE mod_monitoreo_tc.codigos_respuesta
+       SET descripcion=@descripcion,accion=@accion,activo=1,registrado_por=CONVERT(nvarchar(36),@usuario)
+       WHERE codigo=@codigo;
+    ELSE
+      INSERT mod_monitoreo_tc.codigos_respuesta(codigo,descripcion,accion,registrado_por)
+       VALUES(@codigo,@descripcion,@accion,CONVERT(nvarchar(36),@usuario));
+  END;
+  IF @operacion=''''EDITAR''''
+  BEGIN
+    IF @active<>1 THROW 52107,''''Codigo inexistente o desactivado.'''',1;
+    UPDATE mod_monitoreo_tc.codigos_respuesta SET descripcion=@descripcion,accion=@accion,
+      registrado_por=CONVERT(nvarchar(36),@usuario) WHERE codigo=@codigo AND activo=1;
+  END;
+  IF @operacion=''''DESACTIVAR''''
+  BEGIN
+    IF @active<>1 THROW 52107,''''Codigo inexistente o desactivado.'''',1;
+    UPDATE mod_monitoreo_tc.codigos_respuesta SET activo=0 WHERE codigo=@codigo AND activo=1;
+  END;
+  INSERT core.audit_events(user_id,action,result,resource_type,resource_id,details)
+  VALUES(@usuario,CONCAT(''''MONITOREO_TC.CODE.'''',@operacion),''''SUCCESS'''',''''monitoreo_codigo'''',@codigo,
+    (SELECT @codigo codigo,@operacion operacion,@accion accion FOR JSON PATH,WITHOUT_ARRAY_WRAPPER));
+  COMMIT;
+  SELECT @codigo AS codigo,@operacion AS operacion;
+ END TRY
+ BEGIN CATCH
+  IF @@TRANCOUNT>0 ROLLBACK;
+  THROW;
+ END CATCH
+END;
+'';
+EXEC sys.sp_executesql N''
+GRANT EXECUTE ON core.monitoreo_tc_guardar_codigo TO hub_runtime;
+'';
+ INSERT dbo.hub_migrations(name,sha256) VALUES(N''013_monitoreo_tc_codigos.sql'',N''c46eaa243e85401f523d561cf3d74ac133d72505220a65ab2e3aadf239112954'');
  END;
  COMMIT;
  SELECT name,sha256,applied_at FROM dbo.hub_migrations ORDER BY name;
