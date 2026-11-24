@@ -102,3 +102,4 @@ BEGIN
 END;
 GO
 GRANT EXECUTE ON core.monitoreo_tc_importar TO hub_runtime;
+GRANT SELECT ON core.monitoreo_tc_cargas TO hub_runtime;
