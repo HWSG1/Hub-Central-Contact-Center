@@ -24,6 +24,8 @@ CREATE TABLE core.monitoreo_tc_cargas (
 GO
 CREATE INDEX IX_monitoreo_tc_cargas_fecha ON core.monitoreo_tc_cargas(fecha_carga DESC);
 GO
+GRANT INSERT ON core.monitoreo_tc_cargas TO hub_package_owner;
+GO
 CREATE PROCEDURE core.monitoreo_tc_importar
  @usuario uniqueidentifier,
  @archivo nvarchar(120),
