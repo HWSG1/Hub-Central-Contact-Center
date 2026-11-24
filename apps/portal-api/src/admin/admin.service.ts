@@ -147,8 +147,9 @@ export class AdminService {
  const s=await this.snapshot(q),actor=s.users.find(u=>u.id===req.user.id);
  if(!session||!live(session)||!actor||!active(actor)||actor.must_change_password)throw new UnauthorizedException();
  if(!actor.require_mfa)throw new ForbiddenException('La cuenta administrativa requiere MFA.');
- // Module management uses the normal session lifetime; security administration still requires recent sign-in.
- if(permission!=='CORE.MODULES.MANAGE'&&Date.now()-+new Date(session.created_at)>900000)throw new ForbiddenException('Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
+ // Module installation/publication has an 8h MFA window; sensitive identity/role changes retain 15 minutes.
+ const authWindow=permission==='CORE.MODULES.MANAGE'?8*60*60*1000:15*60*1000;
+ if(Date.now()-+new Date(session.created_at)>=authWindow)throw new ForbiddenException(permission==='CORE.MODULES.MANAGE'?'Para administrar módulos, vuelve a iniciar sesión con MFA (máximo 8 horas).':'Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
  await this.unscoped(q,actor.id);
  if(!effective(s,actor.id).includes(permission))throw new ForbiddenException('No tienes permiso para esta acción.');
  const change=await apply(q,s);preserveAdministrator(s);
