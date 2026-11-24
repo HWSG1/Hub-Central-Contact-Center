@@ -44,7 +44,7 @@ def cleaned(x, limit=300):
 def date_value(x, epoch1904):
     value=cleaned(x,40)
     if not value:raise ValueError('Falta fecha del evento.')
-    if re.fullmatch(r'\\d+(?:\\.\\d+)?',value):
+    if re.fullmatch(r'\d+(?:\.\d+)?',value):
         if len(value)==14:
             parsed=datetime.strptime(value,'%Y%m%d%H%M%S')
         else:
