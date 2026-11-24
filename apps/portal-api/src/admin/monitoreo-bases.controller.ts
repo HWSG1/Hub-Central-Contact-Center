@@ -31,14 +31,31 @@ async function parse(path:string,out:string){
    cwd:process.cwd(),shell:false,windowsHide:true,timeout:180000,
    env:{...process.env,PYTHONIOENCODING:'utf-8'}
   });
-  let output='';let finished=false;
+  let output='',diagnostic='',finished=false;
   child.stdout.on('data',piece=>{if(output.length<2000)output+=String(piece).slice(0,2000);});
-  child.on('error',error=>{if(!finished){finished=true;reject(error);}});
+  child.stderr.on('data',piece=>{if(diagnostic.length<4000)diagnostic+=String(piece).slice(0,4000);});
+  child.on('error',error=>{
+   if(finished)return;finished=true;
+   console.error('[MONITOREO_TC] No se pudo iniciar Python:',(error as NodeJS.ErrnoException).code??error.name);
+   reject(new ServiceUnavailableException('No se pudo iniciar el validador Python. Verifica MONITOREO_PYTHON y que el ejecutable esté disponible para la API.'));
+  });
   child.on('close',(code,signal)=>{
    if(finished)return;finished=true;
    if(code===0&&!signal)return resolve();
-   try{const err=JSON.parse(output) as {error?:string};reject(new BadRequestException((err.error||'Archivo inválido.').slice(0,300)));}
-   catch(error){reject(error instanceof BadRequestException?error:new BadRequestException('No se pudo validar el archivo.'));}
+   try{
+    const err=JSON.parse(output.trim()) as {error?:string};
+    if(typeof err.error==='string'&&err.error.trim())return reject(new BadRequestException(err.error.slice(0,300)));
+   }catch{/* El proceso no alcanzó a emitir un error de validación controlado. */}
+   const detail=diagnostic.toLowerCase();
+   const pythonMissing=/python was not found|no se encontr[oó] python|no python at|not recognized as an internal|can't open file|no such file or directory/.test(detail);
+   // Nunca registrar stdout, filas del Excel ni valores de clientes en la bitácora.
+   console.error('[MONITOREO_TC] Validador Python terminó sin respuesta:',{
+    exitCode:code,signal,pythonMissing,stderrPresent:!!diagnostic,
+    stderrKind:/traceback \(most recent call last\)/i.test(diagnostic)?'python_traceback':'process_error'
+   });
+   reject(pythonMissing?
+    new ServiceUnavailableException('El ejecutable Python o el script de importación no está disponible. Revisa MONITOREO_PYTHON y la ruta de scripts del Hub.'):
+    new ServiceUnavailableException('El validador Python finalizó sin un resultado. Revisa el log del backend: MONITOREO_TC y el código de salida '+String(code)+'.'));
   });
  });
 }
