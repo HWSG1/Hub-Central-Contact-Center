@@ -152,9 +152,9 @@ export class MonitoreoBasesController {
     throw new BadRequestException('El lote no cumple los límites.');
    if(!commit){
     previews.set(key,{sha,valid:parsed.valid,expires:Date.now()+10*60*1000});
-    await this.db.query(`INSERT core.audit_events(user_id,action,result,resource_type,details)
-     VALUES(@user,'MONITOREO_TC.BASE.PREVIEW','SUCCESS','monitoreo_tc',@details)`,{
-      user:req.user.id,details:JSON.stringify({file:filename,sha256:sha,valid:parsed.valid,
+    await this.db.query(`INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,details)
+     VALUES(@user,'MONITOREO_TC.BASE.PREVIEW','SUCCESS',@correlation,'monitoreo_tc',@details)`,{
+      user:req.user.id,correlation:req.correlation,details:JSON.stringify({file:filename,sha256:sha,valid:parsed.valid,
         duplicated_in_file:parsed.duplicated_in_file})});
     return {ok:true,archivo:filename,validos:parsed.valid,duplicados_archivo:parsed.duplicated_in_file,
       ignorados:parsed.ignored,activada:false};
