@@ -6,7 +6,16 @@ export function compileQuery(code:string,queries:Queries,name:string,value:unkno
  const allowed=[...query.filters.map(f=>f.param),...(query.page?['page']:[]),...(query.scope?['period']:[])];
  if(Object.keys(input).some(k=>!allowed.includes(k)))throw Error('Parámetros no admitidos.');
  const params:Record<string,unknown>={};const filters:string[]=[];
- query.filters.forEach((filter,index)=>{const data=input[filter.param];if(typeof data!=='string'||(filter.type==='id'?!/^[1-9][0-9]{0,17}$/.test(data):!/^[0-9A-Za-z-]{1,40}$/.test(data)))throw Error('Identificador inválido.');const key='p'+index;params[key]=data;filters.push(`[${filter.column}]=CONVERT(${filter.type==='id'?'bigint':'varchar(40)'},@${key})`);});
+ query.filters.forEach((filter,index)=>{const data=input[filter.param];if(typeof data!=='string'||(filter.type==='id'?!/^[1-9][0-9]{0,17}$/.test(data):!/^[0-9A-Za-z-]{1,40}$/.test(data)))throw Error('Identificador inválido.');const key='p'+index;params[key]=data;
+  if(code==='MONITOREO_TC'&&query.table==='alertas'&&filter.column==='dni'&&/^[0-9]{4,17}$/.test(data)){
+   // Los extractos de Excel pueden perder ceros iniciales. Conservar el DNI enviado y
+   // cotejar equivalentes de 13 digitos sin normalizar cuentas ni tarjetas.
+   const normalized=data.replace(/^0+(?=\\d)/,'');
+   const padded=normalized.length<=13?normalized.padStart(13,'0'):normalized;
+   params[key+'Normalized']=normalized;
+   params[key+'Padded']=padded;
+   filters.push(`([${filter.column}]=@${key} OR [${filter.column}]=@${key}Normalized OR [${filter.column}]=@${key}Padded)`);
+  }else filters.push(`[${filter.column}]=CONVERT(${filter.type==='id'?'bigint':'varchar(40)'},@${key})`);});
  if(query.active)filters.push('[activo]=1');
  if(query.scope==='actor_month'){
   if(!actor||typeof input.period!=='string'||!/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(input.period))throw Error('Período inválido.');
