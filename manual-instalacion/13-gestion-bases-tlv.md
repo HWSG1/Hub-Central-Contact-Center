@@ -11,7 +11,7 @@ La actualización de **módulo ZIP 1.3.0** incorpora el PDF con el diseño de am
 - En el **servidor donde se ejecuta la API**: Python 3 y paquete pyodbc, además de ODBC Driver 18 (o cambiar con autorización en el importador).
 - La API soporta SQL_AUTH=windows o SQL_AUTH=sql. El importador Python hereda exclusivamente la configuracion de autenticacion del proceso local, sin credenciales en argumentos ni logs. Para SQL_AUTH=sql, asegurar que SQL_USER y SQL_PASSWORD estan presentes en el archivo .env protegido (no compartirlos).
 - Si el servidor SQL de Windows para el importador difiere del SQL_SERVER de Node, definir TLV_IMPORT_SQL_SERVER en .env con el nombre exacto que funciona con pyodbc. Opcional TLV_PYTHON con ruta a python.exe.
-- Solo cuentas con CORE.MODULES.MANAGE, MFA obligatorio y sesión iniciada hace menos de 15 minutos pueden ver el panel, previsualizar o cargar. Es un permiso administrativo; no concederlo a los operadores.
+- Solo cuentas con CORE.MODULES.MANAGE, MFA obligatorio y sesión iniciada hace menos de 8 horas pueden ver el panel, previsualizar o cargar. Es un permiso administrativo; no concederlo a los operadores.
 
 ## Uso
 1. Seleccionar un archivo **.xlsx o .csv** (límite 30 MB; XLSX hoja `Consulta1`). Se admiten subconjuntos de las **42 columnas oficiales** del módulo Ofertas TLV, en cualquier orden; las ausentes se cargan como `NULL`. El archivo `Noviembre 2026.xlsx` (36 columnas) es estructuralmente compatible. Las columnas obligatorias son `TIPO_BASE` y al menos un identificador (`DNI`, `CODIGO_CLIENTE` o `CUENTA`).
