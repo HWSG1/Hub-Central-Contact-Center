@@ -1,5 +1,14 @@
 -- 012: Monitoreo TC, cargas historicas acumulativas (sin alterar los datos existentes).
 -- Ejecutar por el instalador SQL del Hub; nunca por un ZIP arbitrario.
+-- El firmante del procedimiento necesita permisos limitados sobre el catalogo core.
+GRANT SELECT ON core.users TO hub_package_owner;
+GRANT SELECT ON core.user_roles TO hub_package_owner;
+GRANT SELECT ON core.roles TO hub_package_owner;
+GRANT SELECT ON core.role_permissions TO hub_package_owner;
+GRANT SELECT ON core.permissions TO hub_package_owner;
+GRANT SELECT ON core.modules TO hub_package_owner;
+GRANT INSERT ON core.audit_events TO hub_package_owner;
+GO
 CREATE TABLE core.monitoreo_tc_cargas (
  carga_id uniqueidentifier NOT NULL CONSTRAINT PK_monitoreo_tc_cargas PRIMARY KEY,
  archivo nvarchar(120) NOT NULL,
