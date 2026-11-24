@@ -30,6 +30,25 @@ export class PackageRuntimeController {
     const query=mode==='write'?compileInsert(code,pkg.queries,name,params,req.user.id):compileQuery(code,pkg.queries,name,params,req.user.id);
     return (await this.db.query(query.sql,query.params)).recordset;
    });
+   // Código de respuesta administrado en SQL tiene prioridad sobre el catálogo estático del ZIP.
+   // Si la ampliación 013 aún no existe, conservar compatibilidad con el paquete firmado anterior.
+   if(code==='MONITOREO_TC'&&operation==='buscar'&&result&&typeof result==='object'&&
+      Array.isArray((result as {registros?:unknown}).registros)){
+     try{
+       const data=(result as {registros:Record<string,unknown>[]});
+       const rows=(await this.db.query<{codigo:string;descripcion:string;accion:string}>(`
+         SELECT codigo,descripcion,accion FROM mod_monitoreo_tc.codigos_respuesta
+         WHERE activo=1`)).recordset;
+       const codes=new Map(rows.map(row=>[row.codigo.toUpperCase(),row]));
+       data.registros=data.registros.map(row=>{
+          const raw=String(row.respuesta_codigo??'').trim().toUpperCase();
+          const normalized=/^[0-9]$/.test(raw)?'0'+raw:raw;
+          const item=codes.get(normalized);
+          return {...row,descripcion_respuesta:item?.descripcion??'Código sin descripción registrada',
+            accion_respuesta:item?.accion??null};
+       });
+     }catch{ /* Una instalación anterior puede carecer de permiso SELECT. */ }
+   }
    await this.authorize(req,code);
    await this.db.query("INSERT core.audit_events(user_id,action,result,correlation_id,resource_type,details) VALUES(@actor,'MODULE.EXECUTE','SUCCESS',@correlation,'module',@details)",{actor:req.user.id,correlation:req.correlation,details:JSON.stringify({code,operation})});return {result};
   }catch(error){
