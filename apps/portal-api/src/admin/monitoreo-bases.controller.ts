@@ -1,4 +1,4 @@
-import {BadRequestException,ConflictException,Controller,ForbiddenException,Get,Headers,Post,Req,ServiceUnavailableException} from '@nestjs/common';
+import {BadRequestException,ConflictException,Controller,ForbiddenException,Get,Headers,Post,Body,Req,ServiceUnavailableException} from '@nestjs/common';
 import {spawn} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
@@ -58,6 +58,43 @@ export class MonitoreoBasesController {
     OBJECT_ID(N'core.monitoreo_tc_cargas',N'U') IS NOT NULL AND
     OBJECT_ID(N'mod_monitoreo_tc.alertas',N'U') IS NOT NULL THEN 1 ELSE 0 END ready`)).recordset[0];
   if(!ready?.ready)throw new ConflictException('La administración requiere instalar MONITOREO_TC y aplicar la migración 012 del Hub.');
+ }
+ @Get('codes')
+ async codes(@Req() req:SessionRequest){
+  await this.ensureReady(req);
+  const ready=(await this.db.query<{ready:number}>(`SELECT CASE WHEN OBJECT_ID(N'core.monitoreo_tc_guardar_codigo',N'P') IS NOT NULL THEN 1 ELSE 0 END ready`)).recordset[0];
+  if(!ready?.ready)throw new ConflictException('Aplica la migración SQL 013 para administrar códigos.');
+  const rows=(await this.db.query<{codigo:string;descripcion:string;accion:string;activo:boolean}>(`
+   SELECT codigo,descripcion,accion,activo FROM mod_monitoreo_tc.codigos_respuesta
+    ORDER BY codigo,id`)).recordset;
+  return {codes:rows};
+ }
+ @Post('codes/change')
+ async changeCode(@Req() req:SessionRequest,
+  @Body() body:unknown){
+  await this.ensureReady(req);
+  if(!body||typeof body!=='object'||Array.isArray(body))throw new BadRequestException('Datos inválidos.');
+  const input=body as Record<string,unknown>;
+  if(Object.keys(input).some(k=>!['operation','code','description','action'].includes(k)))
+    throw new BadRequestException('Campos no admitidos.');
+  const operation=input.operation;
+  const code=input.code;
+  const description=input.description;
+  const action=input.action;
+  if(!['CREAR','EDITAR','DESACTIVAR'].includes(String(operation))||
+    typeof code!=='string'||!/^[A-Z0-9]{1,10}$/.test(code)||
+    (operation!=='DESACTIVAR'&&(typeof description!=='string'||!description.trim()||
+      description.trim().length>300||!/^[AD]$/.test(String(action)))))
+    throw new BadRequestException('Operación, código, descripción o acción inválidos.');
+  try{
+   await this.db.query(
+    'EXEC core.monitoreo_tc_guardar_codigo @usuario=@actor,@operacion=@operation,@codigo=@code,@descripcion=@description,@accion=@action',
+    {actor:req.user.id,operation,code,description:operation==='DESACTIVAR'?null:(description as string).trim(),
+      action:operation==='DESACTIVAR'?null:action});
+   return {ok:true,code,operation};
+  }catch{
+   throw new ConflictException('No se pudo modificar el catálogo. Verifica que el código no esté repetido, su estado y la migración 013.');
+  }
  }
  @Get('history')
  async history(@Req() req:SessionRequest){
