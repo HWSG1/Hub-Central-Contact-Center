@@ -14,7 +14,7 @@ function presentMonitoreo(html:string){
  // El visor conserva las llamadas y la firma del ZIP; solo indica visualmente una búsqueda pendiente.
  result=result.replace(
   "loading=true;$('buscar').disabled=true;$('estado').textContent='Consultando registros…';",
-  "loading=true;$('buscar').disabled=true;$('buscar').setAttribute('aria-busy','true');$('buscar').innerHTML='<span class=\\\"mon-search-spinner\\\" aria-hidden=\\\"true\\\"></span> Buscando…';$('estado').textContent='Consultando registros…';"
+  "loading=true;$('buscar').disabled=true;$('buscar').setAttribute('aria-busy','true');$('buscar').innerHTML='<span class=mon-search-spinner aria-hidden=true></span> Buscando…';$('estado').textContent='Consultando registros…';"
  );
  result=result.replace(
   "finally{loading=false;$('buscar').disabled=false}",
