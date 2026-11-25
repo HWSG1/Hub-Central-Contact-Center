@@ -1,4 +1,3 @@
-<nav class="breadcrumb" aria-label="Ubicación"><a routerLink="/">Inicio</a><span>/</span>Plataforma<span>/</span><strong>Centro de módulos</strong></nav>
 <header class="page-heading"><div><p class="eyebrow">PLATAFORMA</p><h1>Centro de módulos</h1><p class="subtitle">Administra la instalación, el acceso y la publicación de tus herramientas.</p></div>@if(has('CORE.MODULES.MANAGE')){<a class="button primary" routerLink="/modules/import"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v12M7 9l5-5 5 5M4 16v4h16v-4"/></svg> Importar módulo (.ZIP)</a>}</header>
 @if(error()){<p role="alert" class="message error-message">{{error()}}</p>}
 @if(notice()){<p role="status" class="message success">{{notice()}}</p>}

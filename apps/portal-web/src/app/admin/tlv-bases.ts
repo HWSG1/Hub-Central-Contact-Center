@@ -10,7 +10,6 @@ type History={history:HistoryRow[];activos:number;inactivos:number};
 type Outcome={ok:boolean;file:string;sha256:string;valid:number;rejected:number;details:string;activated:boolean};
 
 @Component({imports:[RouterLink,DatePipe],template:`
-<nav class="breadcrumb" aria-label="Ubicación"><a routerLink="/modules">Centro de módulos</a><span>/</span><strong>Administrar bases TLV</strong></nav>
 <header class="page-heading"><div><p class="eyebrow">TELEVENTAS · ADMINISTRACIÓN</p><h1>Administrar bases de ofertas</h1><p class="subtitle">Carga mensual de Excel o CSV con validación, activación atómica e historial de auditoría.</p></div><a routerLink="/modules" class="admin-secondary">Volver a módulos</a></header>
 @if(error()){<p class="error-message" role="alert">{{error()}}</p>}
 @if(notice()){<p class="admin-notice" role="status">{{notice()}}</p>}
