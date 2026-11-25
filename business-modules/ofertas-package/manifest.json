@@ -3,7 +3,7 @@
   "id": "OFERTAS_TLV",
   "name": "Buscador de ofertas TLV",
   "description": "Ofertas por cliente y base, detalle por producto y simuladores Extra, Intra y Corta Cuotas.",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "hostApi": 1,
   "publisher": "contact_center_development",
   "permission": "OFERTAS_TLV.USE",
