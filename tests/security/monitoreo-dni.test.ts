@@ -13,6 +13,10 @@ test('Monitoreo searches zero-padded and unpadded DNI without mutating input',()
  assert.equal(p.params.p0Normalized,'715198901262');
  assert.equal(p.params.p0Padded,'0715198901262');
  assert.match(p.sql,/\[dni\]=@p0Normalized/);
+ const fromExcel=compileQuery('MONITOREO_TC',queries,'buscar_dni',{value:'0801000000123',page:0});
+ assert.equal(fromExcel.params.p0,'0801000000123');
+ assert.equal(fromExcel.params.p0Normalized,'801000000123');
+ assert.equal(fromExcel.params.p0Padded,'0801000000123');
  const reverse=compileQuery('MONITOREO_TC',queries,'buscar_dni',{value:'715198901262',page:0});
  assert.equal(reverse.params.p0Padded,'0715198901262');
 });
