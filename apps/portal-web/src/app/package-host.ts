@@ -10,7 +10,7 @@ export class PackageHost implements OnDestroy {
  private http=inject(HttpClient);private auth=inject(Auth);private route=inject(ActivatedRoute);private sanitizer=inject(DomSanitizer);
  @ViewChild('frame') frame?:ElementRef<HTMLIFrameElement>;
  error=signal('');html=signal<SafeHtml|null>(null);private active=0;private alive=true;
- private code=this.route.snapshot.paramMap.get('code')??'';
+ readonly code=this.route.snapshot.paramMap.get('code')??'';
  canManageBases(){return this.code==='MONITOREO_TC'&&!!this.auth.user()?.permissions.includes('CORE.MODULES.MANAGE');}
  private listener=(event:MessageEvent)=>{void this.message(event);};
  constructor(){window.addEventListener('message',this.listener);void this.load();}
