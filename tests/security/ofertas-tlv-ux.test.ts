@@ -21,7 +21,7 @@ test('El PDF nombra el archivo con DNI completo, cliente, fecha y hora',()=>{
  runInContext("selectedOffer={dni:'801198507538',nombre_cliente:'María José Pérez / Gómez'};lastSearch={field:'dni',value:'0801198507538'}",ctx);
  const filename=runInContext('pdfDownloadName()',ctx) as string;
  assert.match(filename,/^0801198507538_Maria_Jose_Perez_Gomez_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.pdf$/);
- assert.doesNotMatch(filename,/[<>:"/\\|?*]/);
+ assert.doesNotMatch(filename,/[<>:"\/\\|?*]/);
 });
 
 test('Una búsqueda nueva limpia detalle, simulación y proyección anteriores',()=>{
