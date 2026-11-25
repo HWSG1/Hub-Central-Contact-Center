@@ -12,7 +12,7 @@ function presentMonitoreo(html:string){
  result=result.replace('<th>Fecha / ID evento</th>','<th>Fecha y hora</th>');
  result=result.replace("(row.fecha_hora_origen||row.fecha_evento||'')+' · '+(row.id_trx||'')","String(row.fecha_hora_origen||row.fecha_evento||'').replace('T',' ').slice(0,19)");
  // Eliminar el recuadro inferior de alcance y conservar el estado accesible de la consulta.
- result=result.replace(/<section class="panel"><div class="warning">[\\s\\S]*?<p id="estado" role="status" class="muted" style="margin-top:12px"><\\/p><\\/section>/,
+ result=result.replace(/<section class="panel"><div class="warning">[\s\S]*?<p id="estado" role="status" class="muted" style="margin-top:12px"><\/p><\/section>/,
   '<p id="estado" role="status" class="muted" style="margin:8px 20px"></p>');
  return result;
 }
