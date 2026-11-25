@@ -17,7 +17,7 @@ const migration=()=>read('database/migrations/010_tlv_auditoria_installer.sql');
 
 test('TLV 010: checksum, orden y SQL consolidado no tienen desalineaciones',()=>{
  const migrations=builder.readMigrations();
- assert.equal(migrations.at(-1)?.name,'010_tlv_auditoria_installer.sql');
+ assert.ok(migrations.some(m=>m.name==='010_tlv_auditoria_installer.sql'));
  assert.equal(builder.render(migrations),read('manual-instalacion/sql/Instalar-Actualizar-Hub.sql'));
 });
 

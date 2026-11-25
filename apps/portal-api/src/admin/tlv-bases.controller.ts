@@ -52,8 +52,8 @@ export class TlvBasesController {
   const session=(await this.db.query<{created_at:Date}>(
    'SELECT created_at FROM core.sessions WHERE token_hash=@hash AND user_id=@user AND revoked_at IS NULL',
    {hash:req.sessionHash,user:req.user.id})).recordset[0];
-  if(!session||Date.now()-new Date(session.created_at).getTime()>15*60*1000)
-   throw new ForbiddenException('Vuelve a iniciar sesión con MFA para administrar bases (15 minutos).');
+  if(!session||Date.now()-new Date(session.created_at).getTime()>8*60*60*1000)
+   throw new ForbiddenException('Vuelve a iniciar sesión con MFA para administrar bases (8 horas).');
   const tables=(await this.db.query<{ready:number}>(
    "SELECT CASE WHEN OBJECT_ID(N'mod_ofertas_tlv.cargas',N'U') IS NOT NULL AND COL_LENGTH(N'mod_ofertas_tlv.base_tlv',N'carga_id') IS NOT NULL THEN 1 ELSE 0 END AS ready"
   )).recordset[0];

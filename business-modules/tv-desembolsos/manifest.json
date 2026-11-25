@@ -1,0 +1,15 @@
+{
+  "format": "hub-package-v2",
+  "id": "TV_DESEMBOLSOS",
+  "name": "Televentas · Registro de desembolsos",
+  "description": "Registro de certificados de Televentas y consulta mensual de los desembolsos del operador.",
+  "version": "1.0.0",
+  "hostApi": 1,
+  "publisher": "contact_center_development",
+  "permission": "TV_DESEMBOLSOS.USE",
+  "operations": [
+    "health",
+    "save",
+    "history"
+  ]
+}

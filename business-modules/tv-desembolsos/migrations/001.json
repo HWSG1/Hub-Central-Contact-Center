@@ -1,0 +1,86 @@
+{
+  "tables": [
+    {
+      "name": "certificados",
+      "columns": [
+        {
+          "name": "certificado",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "tipo_venta",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "tipo_desembolso",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "fecha_desembolso",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "registrado_por",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "correo_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "id_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "gestion_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "estado_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "observacion_origen",
+          "type": "nvarchar(2000)",
+          "nullable": true
+        },
+        {
+          "name": "cuenta_tc_origen",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "fecha_creacion_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        },
+        {
+          "name": "creado_por_nombre_origen",
+          "type": "nvarchar(300)",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        [
+          "registrado_por",
+          "fecha_desembolso"
+        ],
+        [
+          "certificado"
+        ],
+        [
+          "id_origen"
+        ]
+      ]
+    }
+  ]
+}

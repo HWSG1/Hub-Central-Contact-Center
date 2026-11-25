@@ -28,9 +28,14 @@ export class AdminService {
  async fullPackage(req:SessionRequest,input:{archive:string;reason:string},install:boolean){
   let pkg;try{pkg=inspectFullPackage(input.archive);}catch(error){throw new BadRequestException('Paquete rechazado: '+(error instanceof Error?error.message:'Formato inválido.'));}
   const manifest=pkg.manifest,id=randomUUID();let upgrade=false,wasPublished=false;
+  const writableTables=[...new Set(Object.values(pkg.queries).filter(q=>'kind' in q&&q.kind==='insert').map(q=>q.table))];
   try{await this.mutate(req,'CORE.MODULES.MANAGE',install?'MODULE.INSTALL':'MODULE.ANALYZE','module',id,input.reason,async q=>{
    const ready=(await q("SELECT OBJECT_ID(N'core.create_package_storage',N'P') AS ready")).recordset[0];
    if(!ready?.ready)throw new ConflictException('Prepara el instalador aplicando una vez la actualización 008 del Hub.');
+   if(writableTables.length){
+    const append=(await q("SELECT OBJECT_ID(N'core.grant_package_append',N'P') AS ready")).recordset[0];
+    if(!append?.ready)throw new ConflictException('El módulo requiere la actualización SQL 011 para registro seguro de desembolsos.');
+   }
    const existing=(await q<{module_id:string;version:string;manifest:string;installation_id:string;state:string}>(
     `SELECT TOP(1) m.id AS module_id,v.version,v.manifest,i.id AS installation_id,i.state
      FROM core.modules m
@@ -75,6 +80,7 @@ export class AdminService {
      await q('EXEC core.create_package_storage @code=@code,@definition=@definition;',{code:manifest.id,definition:JSON.stringify(pkg.migration)});
      await q('INSERT core.modules(id,code,name,enabled) VALUES(@id,@code,@name,0)',{id,code:manifest.id,name:manifest.name});
      await q('EXEC core.register_package_permission @code=@code;',{code:manifest.id});
+     for(const table of writableTables)await q('EXEC core.grant_package_append @code=@code,@table=@table;',{code:manifest.id,table});
     }
     // La preparación SQL fija solo se aplica en instalaciones NUEVAS de TLV.
     // Una actualización de interfaz no modifica ningún objeto de SQL Server.
@@ -95,7 +101,7 @@ export class AdminService {
  async moduleList(req:SessionRequest){
   await this.unscoped(this.db.query.bind(this.db),req.user.id);
   const installed=(await this.db.query(`WITH versions AS (SELECT m.id,m.code,m.name,m.enabled,v.version,v.manifest,i.state,i.id AS installation_id,ROW_NUMBER() OVER(PARTITION BY m.id ORDER BY i.created_at DESC,i.id DESC) AS rn FROM core.modules m JOIN core.module_versions v ON v.module_id=m.id JOIN core.module_installations i ON i.version_id=v.id) SELECT id,code,name,enabled,version,manifest,state,installation_id FROM versions WHERE rn=1 ORDER BY name`)).recordset;
-  const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'?[m]:[];}catch{return [];}});
+  const packages=installed.flatMap(row=>{try{const m=JSON.parse(String(row.manifest));return m.format==='hub-package-v2'&&m.id===row.code&&m.permission===row.code+'.USE'?[{...m,route:'/extensions/'+row.code}]:[];}catch{return [];}});
   return {available:descriptor,modules:[...descriptors,...packages],installed};
  }
  async manageModule(req:SessionRequest,input:{action:'install'|'publish'|'disable';manifest?:string;code?:string;reason:string}){
@@ -141,8 +147,9 @@ export class AdminService {
  const s=await this.snapshot(q),actor=s.users.find(u=>u.id===req.user.id);
  if(!session||!live(session)||!actor||!active(actor)||actor.must_change_password)throw new UnauthorizedException();
  if(!actor.require_mfa)throw new ForbiddenException('La cuenta administrativa requiere MFA.');
- // Module management uses the normal session lifetime; security administration still requires recent sign-in.
- if(permission!=='CORE.MODULES.MANAGE'&&Date.now()-+new Date(session.created_at)>900000)throw new ForbiddenException('Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
+ // Module installation/publication has an 8h MFA window; sensitive identity/role changes retain 15 minutes.
+ const authWindow=permission==='CORE.MODULES.MANAGE'?8*60*60*1000:15*60*1000;
+ if(Date.now()-+new Date(session.created_at)>=authWindow)throw new ForbiddenException(permission==='CORE.MODULES.MANAGE'?'Para administrar módulos, vuelve a iniciar sesión con MFA (máximo 8 horas).':'Para modificar seguridad, vuelve a iniciar sesión con MFA (máximo 15 minutos).');
  await this.unscoped(q,actor.id);
  if(!effective(s,actor.id).includes(permission))throw new ForbiddenException('No tienes permiso para esta acción.');
  const change=await apply(q,s);preserveAdministrator(s);

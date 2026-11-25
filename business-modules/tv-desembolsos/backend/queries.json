@@ -1,0 +1,31 @@
+{
+  "guardar": {
+    "kind": "insert",
+    "table": "certificados",
+    "columns": [
+      "certificado",
+      "tipo_venta",
+      "tipo_desembolso",
+      "fecha_desembolso"
+    ],
+    "actorColumn": "registrado_por",
+    "uniqueBy": "certificado"
+  },
+  "historial": {
+    "table": "certificados",
+    "columns": [
+      "id",
+      "certificado",
+      "tipo_venta",
+      "tipo_desembolso",
+      "fecha_desembolso",
+      "cargado_en"
+    ],
+    "filters": [],
+    "active": true,
+    "page": true,
+    "scope": "actor_month",
+    "actorColumn": "registrado_por",
+    "dateColumn": "fecha_desembolso"
+  }
+}

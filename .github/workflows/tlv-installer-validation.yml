@@ -9,6 +9,7 @@ on:
       - 'manual-instalacion/**'
       - 'scripts/**'
       - 'tests/security/**'
+      - 'business-modules/tv-desembolsos/**'
       - '.github/workflows/tlv-installer-validation.yml'
   workflow_dispatch:
 
@@ -46,9 +47,23 @@ jobs:
           if (!(Test-Path $node26)) { throw "Node 26 no se pudo preparar" }
           & $node26 --version
           "MODULE_NODE=$node26" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Regenerar SQL consolidado de migraciones aprobadas
+        run: npm run docs:build
       - name: Ejecutar pruebas de seguridad
         run: npm test
-      - name: Verificar sintaxis del importador Python
-        run: python -m py_compile apps/portal-api/scripts/tlv-import.py
+      - name: Verificar sintaxis de importadores Python
+        run: python -m py_compile apps/portal-api/scripts/tlv-import.py apps/portal-api/scripts/monitoreo-import.py business-modules/tv-desembolsos/scripts/importar_historico.py
+      - name: Crear editor temporal solo QA
+        run: npm run modules:publisher
+      - name: Generar ZIP TV_DESEMBOLSOS firmado solo QA
+        run: npm run modules:pack -- business-modules/tv-desembolsos .local/module-keys/development-private.pem business-modules/packages/tv-desembolsos-1.0.0-QA.zip
+      - name: Publicar ZIP QA y clave pública QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-desembolsos-qa-firma-temporal
+          path: |
+            business-modules/packages/tv-desembolsos-1.0.0-QA.zip
+            business-modules/packages/development-publisher-public.json
+          if-no-files-found: error
       - name: Probar importacion TLV con columnas opcionales
         run: python -m unittest discover -s apps/portal-api/scripts/tests -p 'test_*.py' -v

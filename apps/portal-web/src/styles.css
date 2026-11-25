@@ -784,3 +784,24 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
  color:var(--sub);
  white-space:nowrap;
 }
+
+/* Espacio compacto solo para módulos empotrados; no altera pantallas administrativas. */
+.workspace-main.extension-workspace{padding:10px 16px;max-width:none}
+@media(max-width:800px){.workspace-main.extension-workspace{padding:8px}}
+
+/* Breadcrumbs: separadores de texto en la misma linea base que cada etiqueta. */
+.topbar>.workspace-location{
+ display:block;min-width:0;max-width:100%;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;line-height:1.5
+}
+.topbar>.workspace-location>a,
+.topbar>.workspace-location>.route-crumb,
+.topbar>.workspace-location>.route-crumb>a,
+.topbar>.workspace-location>.route-crumb>strong{
+ display:inline;vertical-align:baseline;line-height:inherit
+}
+.topbar>.workspace-location>.route-crumb>.route-separator{
+ display:inline;vertical-align:baseline;color:var(--sub);font-weight:400;
+ white-space:pre;line-height:inherit
+}
+@media(max-width:40rem){.topbar>.workspace-location{display:none}}

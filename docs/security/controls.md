@@ -5,7 +5,7 @@ Objetivo: controles aplicables ASVS 5.0 nivel 2 y evaluación nivel 3 para opera
 | Autenticación local | Argon2id, cuenta autorizada, error genérico, bloqueo, apagado configurable | Tests de política; login local confirmado por captura del usuario; prueba integral remota pendiente |
 | Corporativa | OIDC Code + PKCE, state, nonce, cookies de transacción, issuer+subject | Prueba con IdP real pendiente; Kerberos/LDAPS no implementados |
 | MFA | OIDC amr=mfa o MFA local TOTP con secreto AES-GCM y contador antirreuso | Alta local por CLI/SSMS con confirmación MFA y cambio inicial; WebAuthn, recuperación y acr corporativo pendientes |
-| Sesiones | Hash opaco, 15 min/8h, revocación, reevaluación estado/permisos | Tests de límite y guard; integración SQL pendiente |
+| Sesiones | Hash opaco, 15 min de inactividad / 12h de duración absoluta, revocación, reevaluación estado/permisos | Tests de límite y guard; integración SQL pendiente |
 | CSRF | Origin exacto para login y escrituras, token de sesión para escrituras autenticadas | Tests de rechazo de token y origen |
 | RBAC | Guard global, permisos explícitos, catálogo autorizado | Administración de roles/usuarios y matriz implementada; pruebas de autoridad, MFA, último administrador y rollback. Integración SQL/UI y alcances por recurso pendientes |
 | Datos | Consultas parametrizadas, migraciones versionadas, FK/índices | 001–004 aplicadas en SQL remoto según captura del usuario; validación de runtime pendiente |
