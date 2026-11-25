@@ -11,6 +11,17 @@ function presentMonitoreo(html:string){
  // La transacción conserva su ID en SQL; la tabla muestra únicamente fecha y hora.
  result=result.replace('<th>Fecha / ID evento</th>','<th>Fecha y hora</th>');
  result=result.replace("(row.fecha_hora_origen||row.fecha_evento||'')+' · '+(row.id_trx||'')","String(row.fecha_hora_origen||row.fecha_evento||'').replace('T',' ').slice(0,19)");
+ // El visor conserva las llamadas y la firma del ZIP; solo indica visualmente una búsqueda pendiente.
+ result=result.replace(
+  "loading=true;$('buscar').disabled=true;$('estado').textContent='Consultando registros…';",
+  "loading=true;$('buscar').disabled=true;$('buscar').setAttribute('aria-busy','true');$('buscar').innerHTML='<span class=\\\"mon-search-spinner\\\" aria-hidden=\\\"true\\\"></span> Buscando…';$('estado').textContent='Consultando registros…';"
+ );
+ result=result.replace(
+  "finally{loading=false;$('buscar').disabled=false}",
+  "finally{loading=false;$('buscar').disabled=false;$('buscar').removeAttribute('aria-busy');$('buscar').textContent='Buscar'}"
+ );
+ result=result.replace('</head>','<style>.mon-search-spinner{display:inline-block;width:15px;height:15px;border:2px solid #fff7;border-top-color:#fff;border-radius:50%;vertical-align:-3px;margin-right:7px;animation:mon-search-spin .75s linear infinite}@keyframes mon-search-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.mon-search-spinner{animation:none;border-style:dotted}}</style></head>');
+
  // Eliminar el recuadro inferior de alcance y conservar el estado accesible de la consulta.
  result=result.replace(/<section class="panel"><div class="warning">[\s\S]*?<p id="estado" role="status" class="muted" style="margin-top:12px"><\/p><\/section>/,
   '<p id="estado" role="status" class="muted" style="margin:8px 20px"></p>');
