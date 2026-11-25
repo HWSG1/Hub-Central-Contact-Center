@@ -7,7 +7,6 @@ import { Auth } from './auth';
 import { adminError } from './admin/models';
 interface Report {upgrade?:boolean;schema?:string;tables?:string[];manifest:{format?:string;publisher?:string;id:string;name:string;version:string;permission:string;route:string;description:string};sha256:string;size:number;files:string[];}
 @Component({host:{class:'compact-wizard'},imports:[FormsModule,RouterLink],template:`
- <nav class="breadcrumb" aria-label="Ubicación"><a routerLink="/">Inicio</a><span>/</span><a routerLink="/modules">Centro de módulos</a><span>/</span><strong>Importación</strong></nav>
  <header class="page-heading"><div><h1>Importar módulo</h1><p class="subtitle">Carga, revisa e instala un paquete compatible con el Hub.</p></div><span class="status-label">Paso {{step()+1}} de 6</span></header>
  @if(!allowed()){<p role="alert">Necesitas CORE.MODULES.MANAGE para importar módulos.</p>}
  @else{
