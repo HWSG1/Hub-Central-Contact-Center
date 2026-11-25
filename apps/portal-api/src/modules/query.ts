@@ -10,7 +10,7 @@ export function compileQuery(code:string,queries:Queries,name:string,value:unkno
   if(code==='MONITOREO_TC'&&query.table==='alertas'&&filter.column==='dni'&&/^[0-9]{4,17}$/.test(data)){
    // Los extractos de Excel pueden perder ceros iniciales. Conservar el DNI enviado y
    // cotejar equivalentes de 13 digitos sin normalizar cuentas ni tarjetas.
-   const normalized=data.replace(/^0+(?=\\d)/,'');
+   const normalized=data.replace(/^0+(?=\d)/,'');
    const padded=normalized.length<=13?normalized.padStart(13,'0'):normalized;
    params[key+'Normalized']=normalized;
    params[key+'Padded']=padded;
