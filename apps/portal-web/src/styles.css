@@ -789,7 +789,19 @@ a.admin-secondary {display:inline-flex;align-items:center;justify-content:center
 .workspace-main.extension-workspace{padding:10px 16px;max-width:none}
 @media(max-width:800px){.workspace-main.extension-workspace{padding:8px}}
 
-/* Breadcrumbs: misma separación a ambos lados de cada barra. */
-.topbar>.workspace-location{display:flex;align-items:center;column-gap:10px;row-gap:4px;flex-wrap:wrap;min-width:0}
-.topbar>.workspace-location .breadcrumb{margin:0;display:inline-block;color:var(--sub)}
+/* Breadcrumbs: una sola linea, separadores centrados y espacio uniforme. */
+.topbar>.workspace-location{
+ display:flex;align-items:center;flex-wrap:nowrap;
+ gap:12px;min-width:0;max-width:100%;white-space:nowrap;
+}
+.topbar>.workspace-location>a,
+.topbar>.workspace-location>.breadcrumb{flex:0 0 auto;line-height:1.4}
+.topbar>.workspace-location>.breadcrumb{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin:0;padding:0;line-height:1.4;color:var(--sub)
+}
+.topbar>.workspace-location>strong{
+ display:block;flex:0 1 auto;min-width:0;line-height:1.4;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
 @media(max-width:40rem){.topbar>.workspace-location{display:none}}
