@@ -1,5 +1,13 @@
 # 08 · Historial del manual y del esquema
 
+
+## 2026-11-26 · Puertos independientes en desarrollo
+- `.env.example` define FRONTEND_PORT=4200 y BACKEND_PORT=3000; se conserva APP_ORIGIN=http://localhost:4200. Cada PC modifica su propio `.env` privado sin publicarlo.
+- `start:api` usa BACKEND_PORT con compatibilidad para la variable antigua PORT; `start:web` carga .env con Node, evita que la variable genérica PORT de Angular 22 sobrescriba el puerto solicitado y genera `.local/dev-proxy.json` apuntando a BACKEND_PORT.
+- Los puertos se validan entre 1024 y 65535 y no pueden ser iguales. Se agregan pruebas automatizadas para valores predeterminados, compatibilidad, prioridad y aislamiento de PORT.
+- No se alteran claves, identidades, migraciones SQL ni parámetros de producción IIS. Si cambian los puertos fuera del desarrollo local, se deben actualizar también APP_ORIGIN, el redirect OIDC/Entra y el proxy IIS correspondiente.
+- Validación final: consultar la ejecución de GitHub Actions del PR asociado antes de adoptar el cambio.
+
 ## 2026-11-18 · Manual consolidado
 - Carpeta manual-instalacion como punto de entrada único para requisitos, instalación desde GitHub, .env, SQL, usuarios, despliegue y errores.
 - Instalar-Actualizar-Hub.sql generado desde migraciones 001–004, con servidor/base obligatorios, revisión predeterminada, historial y transacción.
