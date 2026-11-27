@@ -15,7 +15,7 @@ npm.cmd ci
 npm.cmd run build
 ~~~
 
-En dos terminales: npm.cmd run start:api y npm.cmd run start:web. Abrir http://localhost:4200. dist y .env no se incluyen en GitHub: compilar y configurar en cada instalación. No hay credenciales predeterminadas.
+En dos terminales: npm.cmd run start:api y npm.cmd run start:web. En .env definir FRONTEND_PORT=4200, BACKEND_PORT=3000 y APP_ORIGIN=http://localhost:4200. Abrir http://localhost:4200. El frontend configura automáticamente su proxy /api al puerto del backend y aísla la variable genérica PORT para evitar conflictos con Angular. Los .env antiguos con PORT=3000 siguen funcionando. dist y .env no se incluyen en GitHub: compilar y configurar en cada instalación. No hay credenciales predeterminadas.
 
 ## Desarrollo y documentación
 - npm.cmd test: pruebas y verificación del manual/SQL.
