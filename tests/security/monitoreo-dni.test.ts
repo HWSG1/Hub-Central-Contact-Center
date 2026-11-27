@@ -26,3 +26,18 @@ test('Account search never strips leading zeros',()=>{
  assert.equal(p.params.p0Normalized,undefined);
  assert.doesNotMatch(p.sql,/p0Normalized/);
 });
+
+test('Monitoreo never exposes the internal blocking rule in alert query results',()=>{
+ const cases:Queries={
+  buscar_dni:{table:'alertas',columns:['id','dni','regla','regla_id','respuesta_codigo'],filters:[{column:'dni',param:'value',type:'text'}],active:true,page:true},
+  buscar_cuenta:{table:'alertas',columns:['id','cuenta','regla','regla_id','respuesta_codigo'],filters:[{column:'cuenta',param:'value',type:'text'}],active:true,page:true}
+ };
+ for(const name of ['buscar_dni','buscar_cuenta']){
+  const result=compileQuery('MONITOREO_TC',cases,name,{value:'0801198507538',page:0});
+  const projection=result.sql.split(' FROM ')[0];
+  assert.doesNotMatch(projection,/\\[regla(?:_id)?\\]/i);
+  assert.match(projection,/\\[respuesta_codigo\\]/);
+ }
+ const otherModule=compileQuery('ANOTHER_MODULE',cases,'buscar_cuenta',{value:'0801198507538',page:0});
+ assert.match(otherModule.sql.split(' FROM ')[0],/\\[regla\\]/);
+});
