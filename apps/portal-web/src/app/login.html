@@ -7,7 +7,7 @@
       <div class="login-card-heading"><div class="security-icon" aria-hidden="true">◇</div><div><span class="eyebrow">ACCESO A LA PLATAFORMA</span><h2 id="welcome">{{changeRequired()?'Cambia tu contraseña':'Te damos la bienvenida'}}</h2></div></div>
       @if(loading()){<p role="status">Consultando métodos de acceso…</p>}@else{
         @if(providers().corporate&&!changeRequired()){
-          <a class="corporate-button" href="/api/auth/corporate"><span class="windows-mark" aria-hidden="true">⊞</span> Continuar con cuenta corporativa <span aria-hidden="true">↗</span></a>
+          <a class="corporate-button" href="/api/auth/corporate"><svg class="microsoft-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="13" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="13" width="10" height="10" fill="#00a4ef"/><rect x="13" y="13" width="10" height="10" fill="#ffb900"/></svg> Continuar con cuenta corporativa <span aria-hidden="true">↗</span></a>
           @if(providers().local){<div class="divider">O CON TU CUENTA LOCAL</div>}
         }
         @if(providers().local){
