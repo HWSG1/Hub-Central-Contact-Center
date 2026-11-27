@@ -21,8 +21,10 @@ function main(){
  mkdirSync(localDir,{recursive:true});
  const proxyFile=path.join(localDir,'dev-proxy.json');
  writeFileSync(proxyFile,JSON.stringify({'/api':{target:'http://127.0.0.1:'+backend,secure:true}})+'\n',{encoding:'utf8',mode:0o600});
- console.log('Frontend: http://127.0.0.1:'+frontend+' | API proxy: http://127.0.0.1:'+backend);
- const flags=['serve','--host','127.0.0.1','--proxy-config',proxyFile,'--port',String(frontend),...process.argv.slice(2)];
+ console.log('Frontend: http://localhost:'+frontend+' | API proxy: http://127.0.0.1:'+backend);
+ const extra=process.argv.slice(2);
+ const customPort=extra.some(x=>x==='--port'||x.startsWith('--port='));
+ const flags=['serve','--host','127.0.0.1','--proxy-config',proxyFile,...(customPort?[]:['--port',String(frontend)]),...extra];
  const child=spawn(process.execPath,[cli,...flags],{cwd:root,env:angularEnvironment(process.env),stdio:'inherit'});
  child.on('error',error=>{console.error('No fue posible iniciar Angular:',error.message);process.exitCode=1;});
  child.on('exit',(code,signal)=>{process.exitCode=code??(signal?1:0);});
