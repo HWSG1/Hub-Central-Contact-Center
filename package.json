@@ -10,7 +10,7 @@
     "build:api": "tsc -p apps/portal-api/tsconfig.json && node scripts/finish-build.cjs",
     "build:web": "ng build",
     "start:api": "node --env-file=.env dist/api/main.js",
-    "start:web": "node --env-file=.env scripts/start-web.cjs",
+    "start:web": "node scripts/start-web.cjs",
     "test": "tsx --test tests/security/*.test.ts && npm run docs:check",
     "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
     "admin:provision": "tsx --env-file=.env scripts/provision.ts",
