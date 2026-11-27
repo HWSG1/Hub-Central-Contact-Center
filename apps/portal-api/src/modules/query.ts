@@ -26,7 +26,12 @@ export function compileQuery(code:string,queries:Queries,name:string,value:unkno
  }
  let page=0;if(query.page){if(!Number.isInteger(input.page)||Number(input.page)<0||Number(input.page)>10000)throw Error('Página inválida.');page=Number(input.page);}params.offset=page*50;
  // Names originate solely from the signed, schema-validated declaration.
- const columns=query.columns.map(c=>c.toLowerCase()==='id'?`CONVERT(varchar(20),[${c}]) AS [${c}]`:`[${c}]`).join(',');
+ // La descripcion e ID de la regla son informacion interna y no deben llegar
+ // al modulo de consulta de alertas, aun si el ZIP firmado los declara.
+ const publicColumns=code==='MONITOREO_TC'&&query.table==='alertas'
+  ?query.columns.filter(c=>!['regla','regla_id'].includes(c.toLowerCase()))
+  :query.columns;
+ const columns=publicColumns.map(c=>c.toLowerCase()==='id'?`CONVERT(varchar(20),[${c}]) AS [${c}]`:`[${c}]`).join(',');
  const order=code==='MONITOREO_TC'&&query.table==='alertas'?'[fecha_evento] DESC,[fecha_hora_origen] DESC,[id] DESC':'[id]';
  return {sql:`SELECT ${columns} FROM [mod_${code.toLowerCase()}].[${query.table}]${filters.length?' WHERE '+filters.join(' AND '):''} ORDER BY ${order} OFFSET @offset ROWS FETCH NEXT ${query.page?51:1} ROWS ONLY`,params};
 }

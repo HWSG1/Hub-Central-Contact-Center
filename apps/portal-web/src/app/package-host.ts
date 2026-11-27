@@ -8,6 +8,10 @@ import {adminError} from './admin/models';
 /** Ajustes de presentación para el ZIP MONITOREO_TC firmado, sin modificar su contenido almacenado. */
 function presentMonitoreo(html:string){
  let result=html;
+ // Ocultar la regla interna que origino una alerta. El backend tampoco la
+ // entrega al visor: no basta con esconder una columna usando CSS.
+ result=result.replace('<th>Regla de monitoreo</th>','');
+ result=result.replace("td=cell(tr,row.regla||'');",'');
  // La transacción conserva su ID en SQL; la tabla muestra únicamente fecha y hora.
  result=result.replace('<th>Fecha / ID evento</th>','<th>Fecha y hora</th>');
  result=result.replace("(row.fecha_hora_origen||row.fecha_evento||'')+' · '+(row.id_trx||'')","String(row.fecha_hora_origen||row.fecha_evento||'').replace('T',' ').slice(0,19)");
