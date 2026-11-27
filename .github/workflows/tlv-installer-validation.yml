@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'apps/portal-api/**'
+      - 'apps/portal-web/**'
       - 'database/migrations/**'
       - 'manual-instalacion/**'
       - 'scripts/**'
