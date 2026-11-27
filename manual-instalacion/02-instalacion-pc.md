@@ -50,6 +50,6 @@ Terminal 2, en la misma carpeta:
 npm.cmd run start:web
 ~~~
 
-Abrir http://localhost:4200. Mantener ambas terminales abiertas. start:web usa el servidor de desarrollo y un proxy hacia 127.0.0.1:3000; para producción seguir [06](06-despliegue-operacion.md).
+Abrir http://localhost:4200 (o el valor de FRONTEND_PORT configurado en .env). Mantener ambas terminales abiertas. start:web lee FRONTEND_PORT y BACKEND_PORT del .env, elimina PORT únicamente del proceso Angular para evitar conflictos y prepara el proxy /api automáticamente; para producción seguir [06](06-despliegue-operacion.md). Si el .env existente usa PORT=3000, sigue siendo válido para la API, pero se recomienda añadir FRONTEND_PORT=4200 y BACKEND_PORT=3000 sin borrar ni reemplazar otros valores privados.
 
 No confundir usar una base alojada en un servidor de producción con desplegar la aplicación completa a producción. Las pruebas desde una PC conectada a esa base también escriben datos reales y requieren el cambio autorizado.
