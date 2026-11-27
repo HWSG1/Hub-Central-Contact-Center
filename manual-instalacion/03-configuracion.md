@@ -5,7 +5,8 @@ El archivo va al lado de package.json y se carga al iniciar la API. No se modifi
 ## Desarrollo local
 ~~~dotenv
 NODE_ENV=development
-PORT=3000
+FRONTEND_PORT=4200
+BACKEND_PORT=3000
 APP_ORIGIN=http://localhost:4200
 SQL_AUTH=windows
 SQL_SERVER=localhost
@@ -40,7 +41,9 @@ Con puerto explícito, SQL_SERVER contiene el host/DNS sin barra de instancia y 
 SQL mantiene encrypt=true. SQL_TRUST_SERVER_CERTIFICATE=false (predeterminado) exige una cadena confiable y nombre DNS coincidente. Por solicitud explícita del operador se admite SQL_TRUST_SERVER_CERTIFICATE=true para confiar en el certificado presentado sin validarlo, como en el otro proyecto. La conexión permanece cifrada, pero se pierde la verificación de identidad del servidor y queda expuesta a suplantación. La opción aplica a autenticación SQL y Windows; db:check informa si la validación fue omitida. No es necesario configurar una instancia cuando se usa el puerto TCP explícito. Reiniciar la API tras cambiar la variable; recompilar si se actualizó el código. [Referencia de configuración del proyecto](../apps/portal-api/src/database.ts).
 
 ## Origen y puertos de la aplicación
-APP_ORIGIN es el origen exacto del navegador, sin ruta ni barra final. localhost y 127.0.0.1 son orígenes diferentes. Si cambia PORT, actualizar también el destino en apps/portal-web/proxy.json y, en despliegue, el proxy de IIS. No configurar CORS abierto para resolver errores de origen.
+APP_ORIGIN es el origen exacto del navegador, sin ruta ni barra final. localhost y 127.0.0.1 son orígenes diferentes. La API escucha en BACKEND_PORT (3000 por defecto) y Angular se inicia en FRONTEND_PORT (4200 por defecto). El comando `npm.cmd run start:web` carga .env y genera `.local/dev-proxy.json` para redirigir /api automáticamente a BACKEND_PORT; no es necesario editar `apps/portal-web/proxy.json` en desarrollo. Angular 22 prioriza la variable genérica PORT sobre --port: el lanzador elimina esa variable únicamente del proceso Angular. La API mantiene compatibilidad con PORT de los .env anteriores cuando BACKEND_PORT no está definido. No se cambia ni publica el .env privado automáticamente.
+
+Si cambia FRONTEND_PORT, actualizar APP_ORIGIN y, si está configurado OIDC, OIDC_REDIRECT_URI y el redirect autorizado en Entra ID. Si cambia BACKEND_PORT en un despliegue mediante IIS, ajustar también el destino del proxy de IIS. No configurar CORS abierto para resolver errores de origen.
 
 En producción: NODE_ENV=production y APP_ORIGIN=https://nombre-aprobado. La API escucha en 127.0.0.1; el proxy HTTPS recibe las conexiones externas.
 
