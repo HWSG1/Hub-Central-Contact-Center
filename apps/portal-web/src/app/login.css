@@ -17,6 +17,7 @@
 .provider-note {margin:.375rem 0 0;font-size:.8125rem;line-height:1.45}
 .primary-button {margin:0;min-height:44px;padding:.625rem .875rem;font-size:1rem;align-items:center}
 .corporate-button {min-height:44px;padding:.625rem .75rem;font-size:.9375rem}
+.microsoft-logo {display:block;width:23px;height:23px;flex:0 0 23px}
 .divider {margin:.75rem 0;font-size:.6875rem}
 .login-invitation {margin-top:.625rem}
 .login-invitation a,.login-back {text-decoration:underline;text-underline-offset:.2em}
